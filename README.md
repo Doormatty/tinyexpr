@@ -29,7 +29,7 @@ TinyIntegerExpr, simply add those two files to your project.
 Here is a minimal example to evaluate an expression at runtime.
 
 ```C
-    #include "TinyIntegerExpr.h"
+    #include "tinyintegerexpr.h"
     printf("%f\n", tie_interp("5*5", 0)); /* Prints 25. */
 ```
 
@@ -95,7 +95,7 @@ After you're finished, make sure to call `tie_free()`.
 
     int err;
     /* Compile the expression with variables. */
-    tie_expression *expr = tie_compile("sqrt(x^2+y^2)", vars, 2, &err);
+    tie_expression *expr = tie_compile("(x*2+y*2)", vars, 2, &err);
 
     if (expr) {
         x = 3; y = 4;
@@ -117,7 +117,7 @@ Here is a complete example that will evaluate an expression passed in from the c
 line. It also does error checking and binds the variables `x` and `y` to *3* and *4*, respectively.
 
 ```C
-    #include "TinyIntegerExpr.h"
+    #include "tinyintegerexpr.h"
     #include <stdio.h>
 
     int main(int argc, char *argv[])
@@ -158,18 +158,18 @@ line. It also does error checking and binds the variables `x` and `y` to *3* and
 
 This produces the output:
 
-    $ example2 "sqrt(x^2+y2)"
+    $ example2 "(x*2+y2)"
         Evaluating:
-                sqrt(x^2+y2)
-                          ^
+                (x*2+y2)
+                      ^
         Error near here
 
 
-    $ example2 "sqrt(x^2+y^2)"
+    $ example2 "(x*2+y*2)"
         Evaluating:
-                sqrt(x^2+y^2)
+                (x*2+y*2)
         Result:
-                5.000000
+                14
 
 
 ## Binding to Custom Functions
@@ -183,33 +183,12 @@ double my_sum(double a, double b) {
 }
 
 tie_variable vars[] = {
-    {"mysum", my_sum, TE_FUNCTION2} /* TE_FUNCTION2 used because my_sum takes two arguments. */
+    {"mysum", my_sum, TE_FUNCTION2} /* TIE_FUNCTION2 used because my_sum takes two arguments. */
 };
 
 tie_expression *n = tie_compile("mysum(5, 6)", vars, 1, 0);
 
 ```
-
-
-## How it works
-
-`tie_compile()` uses a simple recursive descent parser to compile your
-expression into a syntax tree. For example, the expression `"sin x + 1/4"`
-parses as:
-
-![example syntax tree](doc/e1.png?raw=true)
-
-`tie_compile()` also automatically prunes constant branches. In this example,
-the compiled expression returned by `tie_compile()` would become:
-
-![example syntax tree](doc/e2.png?raw=true)
-
-`tie_eval()` will automatically load in any variables by their pointer, and then evaluate
-and return the result of the expression.
-
-`tie_free()` should always be called when you're done with the compiled expression.
-
-
 ## Speed
 
 
@@ -218,12 +197,11 @@ expression does hard calculations (e.g. exponentiation), and when some of the
 work can be simplified by `tie_compile()`. TinyIntegerExpr is slow compared to C when the
 expression is long and involves only basic arithmetic.
 
-Here is some example performance numbers taken from the included
+Here are some made up performance numbers taken from the included
 **benchmark.c** program:
 
 | Expression | tie_eval time | native C time | slowdown  |
 | :------------- |-------------:| -----:|----:|
-| sqrt(a^1.5+a^2.5) | 15,641 ms | 14,478 ms | 8% slower |
 | a+5 | 765 ms | 563 ms | 36% slower |
 | a+(5*2) | 765 ms | 563 ms | 36% slower |
 | (a+5)*2 | 1422 ms | 563 ms | 153% slower |
@@ -237,8 +215,9 @@ TinyIntegerExpr parses the following grammar:
 
     <list>      =    <expr> {"," <expr>}
     <expr>      =    <term> {("+" | "-") <term>}
-    <term>      =    <factor> {("*" | "/" | "%") <factor>}
-    <factor>    =    <power> {"^" <power>}
+    <term>      =    <shift> {("*" | "/" | "%") <shift>}
+    <shift>     =    <bitwise> {("<" | ">") <bitwise>}
+    <bitwise>   =    <power> {("&" | "|" | "^" ) <power>}
     <power>     =    {("-" | "+")} <base>
     <base>      =    <constant>
                    | <variable>
@@ -250,58 +229,27 @@ TinyIntegerExpr parses the following grammar:
 In addition, whitespace between tokens is ignored.
 
 Valid variable names consist of a letter followed by any combination of:
-letters, the digits *0* through *9*, and underscore. Constants can be integers,
-decimal numbers, or in scientific notation (e.g.  *1e3* for *1000*). A leading
-zero is not required (e.g. *.5* for *0.5*)
-
+letters, the digits *0* through *9*, and underscore. Constants **_must_** be integers, or in scientific notation (e.g.  *1e3* for *1000*). 
 
 ## Functions supported
 
-TinyIntegerExpr supports addition (+), subtraction/negation (-), multiplication (\*),
-division (/), exponentiation (^) and modulus (%) with the normal operator
-precedence (the one exception being that exponentiation is evaluated
-left-to-right, but this can be changed - see below).
-
-The following C math functions are also supported:
-
-- abs (calls to *fabs*), acos, asin, atan, atan2, ceil, cos, cosh, exp, floor, ln (calls to *log*), log (calls to *log10* by default, see below), log10, pow, sin, sinh, sqrt, tan, tanh
-
-The following functions are also built-in and provided by TinyIntegerExpr:
-
-- fac (factorials e.g. `fac 5` == 120)
-- ncr (combinations e.g. `ncr(6,2)` == 15)
-- npr (permutations e.g. `npr(6,2)` == 30)
-
-Also, the following constants are available:
-
-- `pi`, `e`
-
-
-## Compile-time options
-
-
-By default, TinyIntegerExpr does exponentiation from left to right. For example:
-
-`a^b^c == (a^b)^c` and `-a^b == (-a)^b`
-
-This is by design. It's the way that spreadsheets do it (e.g. Excel, Google Sheets).
-
-
-If you would rather have exponentiation work from right to left, you need to
-define `TE_POW_FROM_RIGHT` when compiling `TinyIntegerExpr.c`. There is a
-commented-out define near the top of that file. With this option enabled, the
-behaviour is:
-
-`a^b^c == a^(b^c)` and `-a^b == -(a^b)`
-
-That will match how many scripting languages do it (e.g. Python, Ruby).
-
-Also, if you'd like `log` to default to the natural log instead of `log10`,
-then you can define `TE_NAT_LOG`.
+TinyIntegerExpr supports:
+* addition (`+`)
+* subtraction/negation (`-`) 
+* multiplication (`*`)
+* division (`/`)
+* modulus (`%`) 
+* Bitwise AND (`&`)
+* Bitwise OR (`|`)
+* Bitwise XOR (`^`)
+* Right Shift (`>`)
+* Left Shift (`<`)
+* 
+with the normal operator precedence
 
 ## Hints
 
-- All functions/types start with the letters *te*.
+- All functions/types start with the letters *tie*.
 
 - To allow constant optimization, surround constant expressions in parentheses.
   For example "x+(1+5)" will evaluate the "(1+5)" expression at compile time and
