@@ -1,5 +1,5 @@
-#ifndef TINYEXPR_H
-#define TINYEXPR_H
+#ifndef TINYINTEGEREXPR_H
+#define TINYINTEGEREXPR_H
 
 
 #ifdef __cplusplus
@@ -61,4 +61,4 @@ void tie_free(tie_expression *n);
 }
 #endif
 
-#endif /*TINYEXPR_H*/
+#endif
