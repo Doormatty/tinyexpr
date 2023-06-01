@@ -1,4 +1,4 @@
-#include "tinyexpr.h"
+#include "tinyintegerexpr.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -38,7 +38,7 @@ static void add_history(const char *line) {}
 
 static int eval(const char *str) {
     int err = 0;
-    double r = te_interp(str, &err);
+    double r = tie_interp(str, &err);
     if (err != 0) {
         printf("Error at position %i\n", err);
         return -1;

@@ -1,4 +1,4 @@
-#include "tinyexpr.h"
+#include "tinyintegerexpr.h"
 #include <stdio.h>
 
 
@@ -11,20 +11,20 @@ double my_sum(double a, double b) {
 
 int main(int argc, char *argv[])
 {
-    te_variable vars[] = {
-        {"mysum", my_sum, TE_FUNCTION2}
+    tie_variable vars[] = {
+        {"mysum", my_sum, TIE_FUNCTION2}
     };
 
     const char *expression = "mysum(5, 6)";
     printf("Evaluating:\n\t%s\n", expression);
 
     int err;
-    te_expr *n = te_compile(expression, vars, 1, &err);
+    tie_expression *n = tie_compile(expression, vars, 1, &err);
 
     if (n) {
-        const double r = te_eval(n);
+        const double r = tie_eval(n);
         printf("Result:\n\t%f\n", r);
-        te_free(n);
+        tie_free(n);
     } else {
         /* Show the user where the error is at. */
         printf("\t%*s^\nError near here", err-1, "");

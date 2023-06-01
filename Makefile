@@ -7,30 +7,30 @@ LFLAGS = -lm
 all: smoke smoke_pr repl bench example example2 example3
 
 
-smoke: smoke.c tinyexpr.c
+smoke: smoke.c tinyintegerexpr.c
 	$(CC) $(CCFLAGS) -o $@ $^ $(LFLAGS)
 	./$@
 
-smoke_pr: smoke.c tinyexpr.c
+smoke_pr: smoke.c tinyintegerexpr.c
 	$(CC) $(CCFLAGS) -DTE_POW_FROM_RIGHT -DTE_NAT_LOG -o $@ $^ $(LFLAGS)
 	./$@
 
-repl: repl.o tinyexpr.o
+repl: repl.o tinyintegerexpr.o
 	$(CC) $(CCFLAGS) -o $@ $^ $(LFLAGS)
 
-repl-readline: repl-readline.o tinyexpr.o
+repl-readline: repl-readline.o tinyintegerexpr.o
 	$(CC) $(CCFLAGS) -o $@ $^ $(LFLAGS) -lreadline
 
-bench: benchmark.o tinyexpr.o
+bench: benchmark.o tinyintegerexpr.o
 	$(CC) $(CCFLAGS) -o $@ $^ $(LFLAGS)
 
-example: example.o tinyexpr.o
+example: example.o tinyintegerexpr.o
 	$(CC) $(CCFLAGS) -o $@ $^ $(LFLAGS)
 
-example2: example2.o tinyexpr.o
+example2: example2.o tinyintegerexpr.o
 	$(CC) $(CCFLAGS) -o $@ $^ $(LFLAGS)
 
-example3: example3.o tinyexpr.o
+example3: example3.o tinyintegerexpr.o
 	$(CC) $(CCFLAGS) -o $@ $^ $(LFLAGS)
 
 repl-readline.o: repl.c

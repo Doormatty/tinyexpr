@@ -22,7 +22,7 @@
  * 3. This notice may not be removed or altered from any source distribution.
  */
 
-#include "tinyexpr.h"
+#include "tinyintegerexpr.h"
 #include <stdio.h>
 #include "minctest.h"
 
@@ -153,7 +153,7 @@ void test_results() {
         const double answer = cases[i].answer;
 
         int err;
-        const double ev = te_interp(expr, &err);
+        const double ev = tie_interp(expr, &err);
         lok(!err);
         lfequal(ev, answer);
 
@@ -189,11 +189,11 @@ void test_syntax() {
         const int e = errors[i].answer;
 
         int err;
-        const double r = te_interp(expr, &err);
+        const double r = tie_interp(expr, &err);
         lequal(err, e);
         lok(r != r);
 
-        te_expr *n = te_compile(expr, 0, 0, &err);
+        tie_expression *n = tie_compile(expr, 0, 0, &err);
         lequal(err, e);
         lok(!n);
 
@@ -201,7 +201,7 @@ void test_syntax() {
             printf("FAILED: %s\n", expr);
         }
 
-        const double k = te_interp(expr, 0);
+        const double k = tie_interp(expr, 0);
         lok(k != k);
     }
 }
@@ -228,16 +228,16 @@ void test_nans() {
         const char *expr = nans[i];
 
         int err;
-        const double r = te_interp(expr, &err);
+        const double r = tie_interp(expr, &err);
         lequal(err, 0);
         lok(r != r);
 
-        te_expr *n = te_compile(expr, 0, 0, &err);
+        tie_expression *n = tie_compile(expr, 0, 0, &err);
         lok(n);
         lequal(err, 0);
-        const double c = te_eval(n);
+        const double c = tie_eval(n);
         lok(c != c);
-        te_free(n);
+        tie_free(n);
     }
 }
 
@@ -262,16 +262,16 @@ void test_infs() {
         const char *expr = infs[i];
 
         int err;
-        const double r = te_interp(expr, &err);
+        const double r = tie_interp(expr, &err);
         lequal(err, 0);
         lok(r == r + 1);
 
-        te_expr *n = te_compile(expr, 0, 0, &err);
+        tie_expression *n = tie_compile(expr, 0, 0, &err);
         lok(n);
         lequal(err, 0);
-        const double c = te_eval(n);
+        const double c = tie_eval(n);
         lok(c == c + 1);
-        te_free(n);
+        tie_free(n);
     }
 }
 
@@ -279,23 +279,23 @@ void test_infs() {
 void test_variables() {
 
     double x, y, test;
-    te_variable lookup[] = {{"x", &x}, {"y", &y}, {"te_st", &test}};
+    tie_variable lookup[] = {{"x", &x}, {"y", &y}, {"tie_st", &test}};
 
     int err;
 
-    te_expr *expr1 = te_compile("cos x + sin y", lookup, 2, &err);
+    tie_expression *expr1 = tie_compile("cos x + sin y", lookup, 2, &err);
     lok(expr1);
     lok(!err);
 
-    te_expr *expr2 = te_compile("x+x+x-y", lookup, 2, &err);
+    tie_expression *expr2 = tie_compile("x+x+x-y", lookup, 2, &err);
     lok(expr2);
     lok(!err);
 
-    te_expr *expr3 = te_compile("x*y^3", lookup, 2, &err);
+    tie_expression *expr3 = tie_compile("x*y^3", lookup, 2, &err);
     lok(expr3);
     lok(!err);
 
-    te_expr *expr4 = te_compile("te_st+5", lookup, 3, &err);
+    tie_expression *expr4 = tie_compile("tie_st+5", lookup, 3, &err);
     lok(expr4);
     lok(!err);
 
@@ -303,41 +303,41 @@ void test_variables() {
         for (x = 0; x < 5; ++x) {
             double ev;
 
-            ev = te_eval(expr1);
+            ev = tie_eval(expr1);
             lfequal(ev, cos(x) + sin(y));
 
-            ev = te_eval(expr2);
+            ev = tie_eval(expr2);
             lfequal(ev, x+x+x-y);
 
-            ev = te_eval(expr3);
+            ev = tie_eval(expr3);
             lfequal(ev, x*y*y*y);
 
             test = x;
-            ev = te_eval(expr4);
+            ev = tie_eval(expr4);
             lfequal(ev, x+5);
         }
     }
 
-    te_free(expr1);
-    te_free(expr2);
-    te_free(expr3);
-    te_free(expr4);
+    tie_free(expr1);
+    tie_free(expr2);
+    tie_free(expr3);
+    tie_free(expr4);
 
 
 
-    te_expr *expr5 = te_compile("xx*y^3", lookup, 2, &err);
+    tie_expression *expr5 = tie_compile("xx*y^3", lookup, 2, &err);
     lok(!expr5);
     lok(err);
 
-    te_expr *expr6 = te_compile("tes", lookup, 3, &err);
+    tie_expression *expr6 = tie_compile("tes", lookup, 3, &err);
     lok(!expr6);
     lok(err);
 
-    te_expr *expr7 = te_compile("sinn x", lookup, 2, &err);
+    tie_expression *expr7 = tie_compile("sinn x", lookup, 2, &err);
     lok(!expr7);
     lok(err);
 
-    te_expr *expr8 = te_compile("si x", lookup, 2, &err);
+    tie_expression *expr8 = tie_compile("si x", lookup, 2, &err);
     lok(!expr8);
     lok(err);
 }
@@ -346,19 +346,19 @@ void test_variables() {
 
 #define cross_check(a, b) do {\
     if ((b)!=(b)) break;\
-    expr = te_compile((a), lookup, 2, &err);\
-    lfequal(te_eval(expr), (b));\
+    expr = tie_compile((a), lookup, 2, &err);\
+    lfequal(tie_eval(expr), (b));\
     lok(!err);\
-    te_free(expr);\
+    tie_free(expr);\
 }while(0)
 
 void test_functions() {
 
     double x, y;
-    te_variable lookup[] = {{"x", &x}, {"y", &y}};
+    tie_variable lookup[] = {{"x", &x}, {"y", &y}};
 
     int err;
-    te_expr *expr;
+    tie_expression *expr;
 
     for (x = -5; x < 5; x += .2) {
         cross_check("abs x", fabs(x));
@@ -416,7 +416,7 @@ double sum7(double a, double b, double c, double d, double e, double f, double g
 void test_dynamic() {
 
     double x, f;
-    te_variable lookup[] = {
+    tie_variable lookup[] = {
         {"x", &x},
         {"f", &f},
         {"sum0", sum0, TE_FUNCTION0},
@@ -463,10 +463,10 @@ void test_dynamic() {
         const double answer = cases[i].answer;
 
         int err;
-        te_expr *ex = te_compile(expr, lookup, sizeof(lookup)/sizeof(te_variable), &err);
+        tie_expression *ex = tie_compile(expr, lookup, sizeof(lookup)/sizeof(tie_variable), &err);
         lok(ex);
-        lfequal(te_eval(ex), answer);
-        te_free(ex);
+        lfequal(tie_eval(ex), answer);
+        tie_free(ex);
     }
 }
 
@@ -494,7 +494,7 @@ void test_closure() {
     double extra;
     double c[] = {5,6,7,8,9};
 
-    te_variable lookup[] = {
+    tie_variable lookup[] = {
         {"c0", clo0, TE_CLOSURE0, &extra},
         {"c1", clo1, TE_CLOSURE1, &extra},
         {"c2", clo2, TE_CLOSURE2, &extra},
@@ -513,16 +513,16 @@ void test_closure() {
         const double answer = cases[i].answer;
 
         int err;
-        te_expr *ex = te_compile(expr, lookup, sizeof(lookup)/sizeof(te_variable), &err);
+        tie_expression *ex = tie_compile(expr, lookup, sizeof(lookup)/sizeof(tie_variable), &err);
         lok(ex);
 
         extra = 0;
-        lfequal(te_eval(ex), answer + extra);
+        lfequal(tie_eval(ex), answer + extra);
 
         extra = 10;
-        lfequal(te_eval(ex), answer + extra);
+        lfequal(tie_eval(ex), answer + extra);
 
-        te_free(ex);
+        tie_free(ex);
     }
 
 
@@ -538,10 +538,10 @@ void test_closure() {
         const double answer = cases2[i].answer;
 
         int err;
-        te_expr *ex = te_compile(expr, lookup, sizeof(lookup)/sizeof(te_variable), &err);
+        tie_expression *ex = tie_compile(expr, lookup, sizeof(lookup)/sizeof(tie_variable), &err);
         lok(ex);
-        lfequal(te_eval(ex), answer);
-        te_free(ex);
+        lfequal(tie_eval(ex), answer);
+        tie_free(ex);
     }
 }
 
@@ -560,15 +560,15 @@ void test_optimize() {
         const double answer = cases[i].answer;
 
         int err;
-        te_expr *ex = te_compile(expr, 0, 0, &err);
+        tie_expression *ex = tie_compile(expr, 0, 0, &err);
         lok(ex);
 
         /* The answer should be know without
          * even running eval. */
         lfequal(ex->value, answer);
-        lfequal(te_eval(ex), answer);
+        lfequal(tie_eval(ex), answer);
 
-        te_free(ex);
+        tie_free(ex);
     }
 }
 
@@ -614,7 +614,7 @@ void test_pow() {
 
     double a = 2, b = 3;
 
-    te_variable lookup[] = {
+    tie_variable lookup[] = {
         {"a", &a},
         {"b", &b}
     };
@@ -624,14 +624,14 @@ void test_pow() {
         const char *expr1 = cases[i].expr1;
         const char *expr2 = cases[i].expr2;
 
-        te_expr *ex1 = te_compile(expr1, lookup, sizeof(lookup)/sizeof(te_variable), 0);
-        te_expr *ex2 = te_compile(expr2, lookup, sizeof(lookup)/sizeof(te_variable), 0);
+        tie_expression *ex1 = tie_compile(expr1, lookup, sizeof(lookup)/sizeof(tie_variable), 0);
+        tie_expression *ex2 = tie_compile(expr2, lookup, sizeof(lookup)/sizeof(tie_variable), 0);
 
         lok(ex1);
         lok(ex2);
 
-        double r1 = te_eval(ex1);
-        double r2 = te_eval(ex2);
+        double r1 = tie_eval(ex1);
+        double r2 = tie_eval(ex2);
 
         fflush(stdout);
         const int olfail = lfails;
@@ -640,8 +640,8 @@ void test_pow() {
             printf("Failed expression: %s <> %s\n", expr1, expr2);
         }
 
-        te_free(ex1);
-        te_free(ex2);
+        tie_free(ex1);
+        tie_free(ex2);
     }
 
 }
@@ -679,7 +679,7 @@ void test_combinatorics() {
         const double answer = cases[i].answer;
 
         int err;
-        const double ev = te_interp(expr, &err);
+        const double ev = tie_interp(expr, &err);
         lok(!err);
         lfequal(ev, answer);
 

@@ -1,32 +1,9 @@
 #pragma clang diagnostic push
-#pragma ide diagnostic ignored "cppcoreguidelines-narrowing-conversions"
 #pragma clang diagnostic ignored "-Wunknown-pragmas"
-// SPDX-License-Identifier: Zlib
-/*
- * TINYEXPR - Tiny recursive descent parser and evaluation engine in C
- *
- * Copyright (c) 2015-2020 Lewis Van Winkle
- *
- * http://CodePlea.com
- *
- * This software is provided 'as-is', without any express or implied
- * warranty. In no event will the authors be held liable for any damages
- * arising from the use of this software.
- *
- * Permission is granted to anyone to use this software for any purpose,
- * including commercial applications, and to alter it and redistribute it
- * freely, subject to the following restrictions:
- *
- * 1. The origin of this software must not be misrepresented; you must not
- * claim that you wrote the original software. If you use this software
- * in a product, an acknowledgement in the product documentation would be
- * appreciated but is not required.
- * 2. Altered source versions must be plainly marked as such, and must not be
- * misrepresented as being the original software.
- * 3. This notice may not be removed or altered from any source distribution.
- */
+#pragma ide diagnostic ignored "misc-no-recursion"
+#pragma ide diagnostic ignored "cppcoreguidelines-narrowing-conversions"
 
-#include "tinyexpr.h"
+#include "tinyintegerexpr.h"
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
@@ -43,16 +20,16 @@
 #endif
 
 
-typedef int (*te_fun2)(int, int);
+typedef int (*tie_fun2)(int, int);
 
 enum {
-  NULL_TOKEN = TE_CLOSURE7 + 1, ERROR_TOKEN, END_TOKEN, SEPERATOR_TOKEN,
+  NULL_TOKEN = TIE_CLOSURE7 + 1, ERROR_TOKEN, END_TOKEN, SEPARATOR_TOKEN,
   OPEN_TOKEN, CLOSE_TOKEN, NUMBER_TOKEN, VARIABLE_TOKEN, INFIX_TOKEN
 };
 
 
 enum {
-  TE_CONSTANT = 1
+  TIE_CONSTANT = 1
 };
 
 
@@ -67,25 +44,25 @@ typedef struct state {
   };
   void *context;
 
-  const te_variable *lookup;
+  const tie_variable *lookup;
   int lookup_len;
 } state;
 
 
 #define TYPE_MASK(TYPE) ((TYPE)&0x0000001F)
 
-#define IS_PURE(TYPE) (((TYPE) & TE_FLAG_PURE) != 0)
-#define IS_FUNCTION(TYPE) (((TYPE) & TE_FUNCTION0) != 0)
-#define IS_CLOSURE(TYPE) (((TYPE) & TE_CLOSURE0) != 0)
-#define ARITY(TYPE) ( ((TYPE) & (TE_FUNCTION0 | TE_CLOSURE0)) ? ((TYPE) & 0x00000007) : 0 )
-#define NEW_EXPR(type, ...) new_expr((type), (const te_expr*[]){__VA_ARGS__})
+#define IS_PURE(TYPE) (((TYPE) & TIE_FLAG_PURE) != 0)
+#define IS_FUNCTION(TYPE) (((TYPE) & TIE_FUNCTION0) != 0)
+#define IS_CLOSURE(TYPE) (((TYPE) & TIE_CLOSURE0) != 0)
+#define ARITY(TYPE) ( ((TYPE) & (TIE_FUNCTION0 | TIE_CLOSURE0)) ? ((TYPE) & 0x00000007) : 0 )
+#define NEW_EXPR(type, ...) new_expr((type), (const tie_expression*[]){__VA_ARGS__})
 #define CHECK_NULL(ptr, ...) if ((ptr) == NULL) { __VA_ARGS__; return NULL; }
 
-static te_expr *new_expr(const int type, const te_expr *parameters[]) {
+static tie_expression *new_expr(const int type, const tie_expression *parameters[]) {
   const int arity = ARITY(type);
   const int psize = sizeof(void *) * arity;
-  const int size = (sizeof(te_expr) - sizeof(void *)) + psize + (IS_CLOSURE(type) ? sizeof(void *) : 0);
-  te_expr *ret = malloc(size);
+  const int size = (sizeof(tie_expression) - sizeof(void *)) + psize + (IS_CLOSURE(type) ? sizeof(void *) : 0);
+  tie_expression *ret = malloc(size);
   CHECK_NULL(ret);
 
   memset(ret, 0, size);
@@ -101,39 +78,39 @@ static te_expr *new_expr(const int type, const te_expr *parameters[]) {
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "ArrayIndexOutOfBounds"
 
-void te_free_parameters(te_expr *n) {
+void tie_free_parameters(tie_expression *n) {
   if (!n) return;
   switch (TYPE_MASK(n->type)) {
-    case TE_FUNCTION7:
-    case TE_CLOSURE7:
-      te_free(n->parameters[6]);
-    case TE_FUNCTION6:
-    case TE_CLOSURE6:
-      te_free(n->parameters[5]);
-    case TE_FUNCTION5:
-    case TE_CLOSURE5:
-      te_free(n->parameters[4]);
-    case TE_FUNCTION4:
-    case TE_CLOSURE4:
-      te_free(n->parameters[3]);
-    case TE_FUNCTION3:
-    case TE_CLOSURE3:
-      te_free(n->parameters[2]);
-    case TE_FUNCTION2:
-    case TE_CLOSURE2:
-      te_free(n->parameters[1]);
-    case TE_FUNCTION1:
-    case TE_CLOSURE1:
-      te_free(n->parameters[0]);
+    case TIE_FUNCTION7:
+    case TIE_CLOSURE7:
+      tie_free(n->parameters[6]);
+    case TIE_FUNCTION6:
+    case TIE_CLOSURE6:
+      tie_free(n->parameters[5]);
+    case TIE_FUNCTION5:
+    case TIE_CLOSURE5:
+      tie_free(n->parameters[4]);
+    case TIE_FUNCTION4:
+    case TIE_CLOSURE4:
+      tie_free(n->parameters[3]);
+    case TIE_FUNCTION3:
+    case TIE_CLOSURE3:
+      tie_free(n->parameters[2]);
+    case TIE_FUNCTION2:
+    case TIE_CLOSURE2:
+      tie_free(n->parameters[1]);
+    case TIE_FUNCTION1:
+    case TIE_CLOSURE1:
+      tie_free(n->parameters[0]);
   }
 }
 
 #pragma clang diagnostic pop
 
 
-void te_free(te_expr *n) {
+void tie_free(tie_expression *n) {
   if (!n) return;
-  te_free_parameters(n);
+  tie_free_parameters(n);
   free(n);
 }
 
@@ -141,34 +118,17 @@ static int iffunc(int a, int b, int c) {
   return a ? b : c;
 }
 
-static const te_variable functions[] = {
+static const tie_variable functions[] = {
     /* must be in alphabetical order */
-    {"abs",   fabs,   TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"acos",  acos,   TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"asin",  asin,   TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"atan",  atan,   TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"atan2", atan2,  TE_FUNCTION2 | TE_FLAG_PURE, 0},
-    {"ceil",  ceil,   TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"cos",   cos,    TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"cosh",  cosh,   TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"exp",   exp,    TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"floor", floor,  TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"if",    iffunc, TE_FUNCTION2 | TE_FLAG_PURE, 0},
-    {"ln",    log,    TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"log",   log10,  TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"log10", log10,  TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"pow",   pow,    TE_FUNCTION2 | TE_FLAG_PURE, 0},
-    {"sin",   sin,    TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"sinh",  sinh,   TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"sqrt",  sqrt,   TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"tan",   tan,    TE_FUNCTION1 | TE_FLAG_PURE, 0},
-    {"tanh",  tanh,   TE_FUNCTION1 | TE_FLAG_PURE, 0},
+    {"abs",   fabs,   TIE_FUNCTION1 | TIE_FLAG_PURE, 0},
+    {"floor", floor,  TIE_FUNCTION1 | TIE_FLAG_PURE, 0},
+    {"if",    iffunc, TIE_FUNCTION3 | TIE_FLAG_PURE, 0},
     {0,       0,      0,                           0}
 };
 
-static const te_variable *find_builtin(const char *name, int len) {
+static const tie_variable *find_builtin(const char *name, int len) {
   int imin = 0;
-  int imax = sizeof(functions) / sizeof(te_variable) - 2;
+  int imax = sizeof(functions) / sizeof(tie_variable) - 2;
 
   /*Binary search.*/
   while (imax >= imin) {
@@ -187,9 +147,9 @@ static const te_variable *find_builtin(const char *name, int len) {
   return 0;
 }
 
-static const te_variable *find_lookup(const state *s, const char *name, int len) {
+static const tie_variable *find_lookup(const state *s, const char *name, int len) {
   int iters;
-  const te_variable *var;
+  const tie_variable *var;
   if (!s->lookup) return 0;
 
   for (var = s->lookup, iters = s->lookup_len; iters; ++var, --iters) {
@@ -263,17 +223,17 @@ void next_token(state *s) {
     }
 
     // Is it a Number?
-    if ((s->next[0] >= '0' && s->next[0] <= '9') || s->next[0] == '.') {
+    if (isdigit(s->next[0]) || s->next[0] == '.') {
       s->value = strtod(s->next, (char **) &s->next);
       s->type = NUMBER_TOKEN;
     } else {
-      /* Look for a variable or builtin function call. */
+      // Is it a variable or a builtin function call?
       if (isalpha(s->next[0])) {
         const char *start;
         start = s->next;
         while (isalpha(s->next[0]) || isdigit(s->next[0]) || (s->next[0] == '_')) s->next++;
 
-        const te_variable *var = find_lookup(s, start, s->next - start);
+        const tie_variable *var = find_lookup(s, start, s->next - start);
         // If the variable couldn't be looked up, check to see if it's a builtin function
         if (!var) var = find_builtin(start, s->next - start);
         // If the variable _STILL_ doesn't exist, then it's an error.
@@ -281,29 +241,29 @@ void next_token(state *s) {
           s->type = ERROR_TOKEN;
         } else {
           switch (TYPE_MASK(var->type)) {
-            case TE_VARIABLE:
+            case TIE_VARIABLE:
               s->type = VARIABLE_TOKEN;
               s->bound = var->address;
               break;
 
-            case TE_CLOSURE0:
-            case TE_CLOSURE1:
-            case TE_CLOSURE2:
-            case TE_CLOSURE3:
-            case TE_CLOSURE4:
-            case TE_CLOSURE5:
-            case TE_CLOSURE6:
-            case TE_CLOSURE7:
+            case TIE_CLOSURE0:
+            case TIE_CLOSURE1:
+            case TIE_CLOSURE2:
+            case TIE_CLOSURE3:
+            case TIE_CLOSURE4:
+            case TIE_CLOSURE5:
+            case TIE_CLOSURE6:
+            case TIE_CLOSURE7:
               s->context = var->context;
 
-            case TE_FUNCTION0:
-            case TE_FUNCTION1:
-            case TE_FUNCTION2:
-            case TE_FUNCTION3:
-            case TE_FUNCTION4:
-            case TE_FUNCTION5:
-            case TE_FUNCTION6:
-            case TE_FUNCTION7:
+            case TIE_FUNCTION0:
+            case TIE_FUNCTION1:
+            case TIE_FUNCTION2:
+            case TIE_FUNCTION3:
+            case TIE_FUNCTION4:
+            case TIE_FUNCTION5:
+            case TIE_FUNCTION6:
+            case TIE_FUNCTION7:
               s->type = var->type;
               s->function = var->address;
               break;
@@ -311,7 +271,7 @@ void next_token(state *s) {
         }
 
       } else {
-        /* Look for an operator or special character. */
+        // See if it's an operator or special character.
         switch (s->next++[0]) {
           case '&':
             s->type = INFIX_TOKEN;
@@ -364,7 +324,7 @@ void next_token(state *s) {
             s->type = CLOSE_TOKEN;
             break;
           case ',':
-            s->type = SEPERATOR_TOKEN;
+            s->type = SEPARATOR_TOKEN;
             break;
           case ' ':
           case '\t':
@@ -381,20 +341,24 @@ void next_token(state *s) {
 }
 
 
-static te_expr *list(state *s);
+static tie_expression *list(state *s);
 
-static te_expr *expr(state *s);
+static tie_expression *expr(state *s);
 
-static te_expr *power(state *s);
+static tie_expression *power(state *s);
 
-static te_expr *base(state *s) {
+static tie_expression *bitwise(state *s);
+
+static tie_expression *shift(state *s);
+
+static tie_expression *base(state *s) {
   /* <base>      =    <constant> | <variable> | <function-0> {"(" ")"} | <function-1> <power> | <function-X> "(" <expr> {"," <expr>} ")" | "(" <list> ")" */
-  te_expr *ret;
-  int arity;
+  tie_expression *ret;
+  unsigned char arity;
 
   switch (TYPE_MASK(s->type)) {
     case NUMBER_TOKEN:
-      ret = new_expr(TE_CONSTANT, 0);
+      ret = new_expr(TIE_CONSTANT, 0);
       CHECK_NULL(ret);
 
       ret->value = s->value;
@@ -402,15 +366,15 @@ static te_expr *base(state *s) {
       break;
 
     case VARIABLE_TOKEN:
-      ret = new_expr(TE_VARIABLE, 0);
+      ret = new_expr(TIE_VARIABLE, 0);
       CHECK_NULL(ret);
 
       ret->bound = s->bound;
       next_token(s);
       break;
 
-    case TE_FUNCTION0:
-    case TE_CLOSURE0:
+    case TIE_FUNCTION0:
+    case TIE_CLOSURE0:
       ret = new_expr(s->type, 0);
       CHECK_NULL(ret);
 
@@ -429,8 +393,8 @@ static te_expr *base(state *s) {
       }
       break;
 
-    case TE_FUNCTION1:
-    case TE_CLOSURE1:
+    case TIE_FUNCTION1:
+    case TIE_CLOSURE1:
       ret = new_expr(s->type, 0);
       CHECK_NULL(ret);
 
@@ -443,21 +407,21 @@ static te_expr *base(state *s) {
 #pragma clang diagnostic pop
       next_token(s);
       ret->parameters[0] = power(s);
-      CHECK_NULL(ret->parameters[0], te_free(ret));
+      CHECK_NULL(ret->parameters[0], tie_free(ret));
       break;
 
-    case TE_FUNCTION2:
-    case TE_FUNCTION3:
-    case TE_FUNCTION4:
-    case TE_FUNCTION5:
-    case TE_FUNCTION6:
-    case TE_FUNCTION7:
-    case TE_CLOSURE2:
-    case TE_CLOSURE3:
-    case TE_CLOSURE4:
-    case TE_CLOSURE5:
-    case TE_CLOSURE6:
-    case TE_CLOSURE7:
+    case TIE_FUNCTION2:
+    case TIE_FUNCTION3:
+    case TIE_FUNCTION4:
+    case TIE_FUNCTION5:
+    case TIE_FUNCTION6:
+    case TIE_FUNCTION7:
+    case TIE_CLOSURE2:
+    case TIE_CLOSURE3:
+    case TIE_CLOSURE4:
+    case TIE_CLOSURE5:
+    case TIE_CLOSURE6:
+    case TIE_CLOSURE7:
       arity = ARITY(s->type);
 
       ret = new_expr(s->type, 0);
@@ -470,13 +434,13 @@ static te_expr *base(state *s) {
       if (s->type != OPEN_TOKEN) {
         s->type = ERROR_TOKEN;
       } else {
-        int i;
+        unsigned char i;
         for (i = 0; i < arity; i++) {
           next_token(s);
           ret->parameters[i] = expr(s);
-          CHECK_NULL(ret->parameters[i], te_free(ret));
+          CHECK_NULL(ret->parameters[i], tie_free(ret));
 
-          if (s->type != SEPERATOR_TOKEN) {
+          if (s->type != SEPARATOR_TOKEN) {
             break;
           }
         }
@@ -514,24 +478,24 @@ static te_expr *base(state *s) {
 }
 
 
-static te_expr *power(state *s) {
-  /* <power>     =    {("-" | "+")} <base> */
-  int sign = 1;
+static tie_expression *power(state *s) {
+  /* <power> = {("-" | "+")} <base> */
+  char sign = 1;
   while (s->type == INFIX_TOKEN && (s->function == add || s->function == sub)) {
     if (s->function == sub) sign = -sign;
     next_token(s);
   }
 
-  te_expr *ret;
+  tie_expression *ret;
 
   if (sign == 1) {
     ret = base(s);
   } else {
-    te_expr *b = base(s);
+    tie_expression *b = base(s);
     CHECK_NULL(b);
 
-    ret = NEW_EXPR(TE_FUNCTION1 | TE_FLAG_PURE, b);
-    CHECK_NULL(ret, te_free(b));
+    ret = NEW_EXPR(TIE_FUNCTION1 | TIE_FLAG_PURE, b);
+    CHECK_NULL(ret, tie_free(b));
 
     ret->function = negate;
   }
@@ -539,20 +503,21 @@ static te_expr *power(state *s) {
   return ret;
 }
 
-static te_expr *factor(state *s) {
-  /* <factor>    =    <power> {"^" <power>} */
-  te_expr *ret = power(s);
+
+static tie_expression *bitwise(state *s) {
+  // <bitwise> = <power> {("&" | "|" | "^" ) <power>}
+  tie_expression *ret = power(s);
   CHECK_NULL(ret);
 
-  while (s->type == INFIX_TOKEN && (s->function == pow)) {
-    te_fun2 t = s->function;
+  while (s->type == INFIX_TOKEN && (s->function == bitwise_and || s->function == bitwise_or || s->function == bitwise_xor)) {
+    tie_fun2 t = s->function;
     next_token(s);
-    te_expr *p = power(s);
-    CHECK_NULL(p, te_free(ret));
+    tie_expression *f = power(s);
+    CHECK_NULL(f, tie_free(ret));
 
-    te_expr *prev = ret;
-    ret = NEW_EXPR(TE_FUNCTION2 | TE_FLAG_PURE, ret, p);
-    CHECK_NULL(ret, te_free(p), te_free(prev));
+    tie_expression *prev = ret;
+    ret = NEW_EXPR(TIE_FUNCTION2 | TIE_FLAG_PURE, ret, f);
+    CHECK_NULL(ret, tie_free(f), tie_free(prev));
 
     ret->function = t;
   }
@@ -560,20 +525,41 @@ static te_expr *factor(state *s) {
   return ret;
 }
 
-static te_expr *term(state *s) {
-  /* <term>      =    <factor> {("*" | "/" | "%") <factor>} */
-  te_expr *ret = factor(s);
+static tie_expression *shift(state *s) {
+  // <shift> = <bitwise> {("<" | ">") <bitwise>}
+  tie_expression *ret = bitwise(s);
+  CHECK_NULL(ret);
+
+  while (s->type == INFIX_TOKEN && (s->function == bitshift_left || s->function == bitshift_right)) {
+    tie_fun2 t = s->function;
+    next_token(s);
+    tie_expression *f = bitwise(s);
+    CHECK_NULL(f, tie_free(ret));
+
+    tie_expression *prev = ret;
+    ret = NEW_EXPR(TIE_FUNCTION2 | TIE_FLAG_PURE, ret, f);
+    CHECK_NULL(ret, tie_free(f), tie_free(prev));
+
+    ret->function = t;
+  }
+
+  return ret;
+}
+
+static tie_expression *term(state *s) {
+  // <term> = <shift> {("*" | "/" | "%") <shift>}
+  tie_expression *ret = shift(s);
   CHECK_NULL(ret);
 
   while (s->type == INFIX_TOKEN && (s->function == mul || s->function == divide || s->function == fmod)) {
-    te_fun2 t = s->function;
+    tie_fun2 t = s->function;
     next_token(s);
-    te_expr *f = factor(s);
-    CHECK_NULL(f, te_free(ret));
+    tie_expression *f = shift(s);
+    CHECK_NULL(f, tie_free(ret));
 
-    te_expr *prev = ret;
-    ret = NEW_EXPR(TE_FUNCTION2 | TE_FLAG_PURE, ret, f);
-    CHECK_NULL(ret, te_free(f), te_free(prev));
+    tie_expression *prev = ret;
+    ret = NEW_EXPR(TIE_FUNCTION2 | TIE_FLAG_PURE, ret, f);
+    CHECK_NULL(ret, tie_free(f), tie_free(prev));
 
     ret->function = t;
   }
@@ -582,20 +568,20 @@ static te_expr *term(state *s) {
 }
 
 
-static te_expr *expr(state *s) {
-  /* <expr>      =    <term> {("+" | "-") <term>} */
-  te_expr *ret = term(s);
+static tie_expression *expr(state *s) {
+  /* <expr> = <term> {("+" | "-") <term>} */
+  tie_expression *ret = term(s);
   CHECK_NULL(ret);
 
   while (s->type == INFIX_TOKEN && (s->function == add || s->function == sub)) {
-    te_fun2 t = s->function;
+    tie_fun2 t = s->function;
     next_token(s);
-    te_expr *te = term(s);
-    CHECK_NULL(te, te_free(ret));
+    tie_expression *te = term(s);
+    CHECK_NULL(te, tie_free(ret));
 
-    te_expr *prev = ret;
-    ret = NEW_EXPR(TE_FUNCTION2 | TE_FLAG_PURE, ret, te);
-    CHECK_NULL(ret, te_free(te), te_free(prev));
+    tie_expression *prev = ret;
+    ret = NEW_EXPR(TIE_FUNCTION2 | TIE_FLAG_PURE, ret, te);
+    CHECK_NULL(ret, tie_free(te), tie_free(prev));
 
     ret->function = t;
   }
@@ -604,19 +590,19 @@ static te_expr *expr(state *s) {
 }
 
 
-static te_expr *list(state *s) {
-  /* <list>      =    <expr> {"," <expr>} */
-  te_expr *ret = expr(s);
+static tie_expression *list(state *s) {
+  /* <list> = <expr> {"," <expr>} */
+  tie_expression *ret = expr(s);
   CHECK_NULL(ret);
 
-  while (s->type == SEPERATOR_TOKEN) {
+  while (s->type == SEPARATOR_TOKEN) {
     next_token(s);
-    te_expr *e = expr(s);
-    CHECK_NULL(e, te_free(ret));
+    tie_expression *e = expr(s);
+    CHECK_NULL(e, tie_free(ret));
 
-    te_expr *prev = ret;
-    ret = NEW_EXPR(TE_FUNCTION2 | TE_FLAG_PURE, ret, e);
-    CHECK_NULL(ret, te_free(e), te_free(prev));
+    tie_expression *prev = ret;
+    ret = NEW_EXPR(TIE_FUNCTION2 | TIE_FLAG_PURE, ret, e);
+    CHECK_NULL(ret, tie_free(e), tie_free(prev));
 
     ret->function = comma;
   }
@@ -625,75 +611,75 @@ static te_expr *list(state *s) {
 }
 
 
-#define TE_FUN(...) ((int(*)(__VA_ARGS__))n->function)
-#define M(e) te_eval(n->parameters[e])
+#define TIE_FUN(...) ((int(*)(__VA_ARGS__))n->function)
+#define M(e) tie_eval(n->parameters[e])
 
 
-int te_eval(const te_expr *n) {
+int tie_eval(const tie_expression *n) {
   if (!n) return NAN;
 
   switch (TYPE_MASK(n->type)) {
-    case TE_CONSTANT:
+    case TIE_CONSTANT:
       return n->value;
-    case TE_VARIABLE:
+    case TIE_VARIABLE:
       return *n->bound;
 
-    case TE_FUNCTION0:
-    case TE_FUNCTION1:
-    case TE_FUNCTION2:
-    case TE_FUNCTION3:
-    case TE_FUNCTION4:
-    case TE_FUNCTION5:
-    case TE_FUNCTION6:
-    case TE_FUNCTION7:
+    case TIE_FUNCTION0:
+    case TIE_FUNCTION1:
+    case TIE_FUNCTION2:
+    case TIE_FUNCTION3:
+    case TIE_FUNCTION4:
+    case TIE_FUNCTION5:
+    case TIE_FUNCTION6:
+    case TIE_FUNCTION7:
       switch (ARITY(n->type)) {
         case 0:
-          return TE_FUN(void)();
+          return TIE_FUN(void)();
         case 1:
-          return TE_FUN(int)(M(0));
+          return TIE_FUN(int)(M(0));
         case 2:
-          return TE_FUN(int, int)(M(0), M(1));
+          return TIE_FUN(int, int)(M(0), M(1));
         case 3:
-          return TE_FUN(int, int, int)(M(0), M(1), M(2));
+          return TIE_FUN(int, int, int)(M(0), M(1), M(2));
         case 4:
-          return TE_FUN(int, int, int, int)(M(0), M(1), M(2), M(3));
+          return TIE_FUN(int, int, int, int)(M(0), M(1), M(2), M(3));
         case 5:
-          return TE_FUN(int, int, int, int, int)(M(0), M(1), M(2), M(3), M(4));
+          return TIE_FUN(int, int, int, int, int)(M(0), M(1), M(2), M(3), M(4));
         case 6:
-          return TE_FUN(int, int, int, int, int, int)(M(0), M(1), M(2), M(3), M(4), M(5));
+          return TIE_FUN(int, int, int, int, int, int)(M(0), M(1), M(2), M(3), M(4), M(5));
         case 7:
-          return TE_FUN(int, int, int, int, int, int, int)(M(0), M(1), M(2), M(3), M(4), M(5), M(6));
+          return TIE_FUN(int, int, int, int, int, int, int)(M(0), M(1), M(2), M(3), M(4), M(5), M(6));
         default:
           return NAN;
       }
 
-    case TE_CLOSURE0:
-    case TE_CLOSURE1:
-    case TE_CLOSURE2:
-    case TE_CLOSURE3:
-    case TE_CLOSURE4:
-    case TE_CLOSURE5:
-    case TE_CLOSURE6:
-    case TE_CLOSURE7:
+    case TIE_CLOSURE0:
+    case TIE_CLOSURE1:
+    case TIE_CLOSURE2:
+    case TIE_CLOSURE3:
+    case TIE_CLOSURE4:
+    case TIE_CLOSURE5:
+    case TIE_CLOSURE6:
+    case TIE_CLOSURE7:
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "ArrayIndexOutOfBounds"
       switch (ARITY(n->type)) {
         case 0:
-          return TE_FUN(void*)(n->parameters[0]);
+          return TIE_FUN(void*)(n->parameters[0]);
         case 1:
-          return TE_FUN(void*, int)(n->parameters[1], M(0));
+          return TIE_FUN(void*, int)(n->parameters[1], M(0));
         case 2:
-          return TE_FUN(void*, int, int)(n->parameters[2], M(0), M(1));
+          return TIE_FUN(void*, int, int)(n->parameters[2], M(0), M(1));
         case 3:
-          return TE_FUN(void*, int, int, int)(n->parameters[3], M(0), M(1), M(2));
+          return TIE_FUN(void*, int, int, int)(n->parameters[3], M(0), M(1), M(2));
         case 4:
-          return TE_FUN(void*, int, int, int, int)(n->parameters[4], M(0), M(1), M(2), M(3));
+          return TIE_FUN(void*, int, int, int, int)(n->parameters[4], M(0), M(1), M(2), M(3));
         case 5:
-          return TE_FUN(void*, int, int, int, int, int)(n->parameters[5], M(0), M(1), M(2), M(3), M(4));
+          return TIE_FUN(void*, int, int, int, int, int)(n->parameters[5], M(0), M(1), M(2), M(3), M(4));
         case 6:
-          return TE_FUN(void*, int, int, int, int, int, int)(n->parameters[6], M(0), M(1), M(2), M(3), M(4), M(5));
+          return TIE_FUN(void*, int, int, int, int, int, int)(n->parameters[6], M(0), M(1), M(2), M(3), M(4), M(5));
         case 7:
-          return TE_FUN(void*, int, int, int, int, int, int, int)(n->parameters[7], M(0), M(1), M(2), M(3), M(4), M(5), M(6));
+          return TIE_FUN(void*, int, int, int, int, int, int, int)(n->parameters[7], M(0), M(1), M(2), M(3), M(4), M(5), M(6));
 #pragma clang diagnostic pop
         default:
           return NAN;
@@ -705,13 +691,13 @@ int te_eval(const te_expr *n) {
 
 }
 
-#undef TE_FUN
+#undef TIE_FUN
 #undef M
 
-static void optimize(te_expr *n) {
+static void optimize(tie_expression *n) {
   /* Evaluates as much as possible. */
-  if (n->type == TE_CONSTANT) return;
-  if (n->type == TE_VARIABLE) return;
+  if (n->type == TIE_CONSTANT) return;
+  if (n->type == TIE_VARIABLE) return;
 
   /* Only optimize out functions flagged as pure. */
   if (IS_PURE(n->type)) {
@@ -720,35 +706,35 @@ static void optimize(te_expr *n) {
     int i;
     for (i = 0; i < arity; ++i) {
       optimize(n->parameters[i]);
-      if (((te_expr *) (n->parameters[i]))->type != TE_CONSTANT) {
+      if (((tie_expression *) (n->parameters[i]))->type != TIE_CONSTANT) {
         known = 0;
       }
     }
     if (known) {
-      const int value = te_eval(n);
-      te_free_parameters(n);
-      n->type = TE_CONSTANT;
+      const int value = tie_eval(n);
+      tie_free_parameters(n);
+      n->type = TIE_CONSTANT;
       n->value = value;
     }
   }
 }
 
 
-te_expr *te_compile(const char *expression, const te_variable *variables, int var_count, int *error) {
+tie_expression *tie_compile(const char *expression, const tie_variable *variables, int var_count, int *error) {
   state s;
   s.start = s.next = expression;
   s.lookup = variables;
   s.lookup_len = var_count;
 
   next_token(&s);
-  te_expr *root = list(&s);
+  tie_expression *root = list(&s);
   if (root == NULL) {
     if (error) *error = -1;
     return NULL;
   }
 
   if (s.type != END_TOKEN) {
-    te_free(root);
+    tie_free(root);
     if (error) {
       *error = (s.next - s.start);
       if (*error == 0) *error = 1;
@@ -761,51 +747,50 @@ te_expr *te_compile(const char *expression, const te_variable *variables, int va
   }
 }
 
-
-int te_interp(const char *expression, int *error) {
-  te_expr *n = te_compile(expression, 0, 0, error);
+int tie_interp(const char *expression, int *error) {
+  tie_expression *n = tie_compile(expression, 0, 0, error);
   if (n == NULL) {
     return NAN;
   }
 
   int ret;
   if (n) {
-    ret = te_eval(n);
-    te_free(n);
+    ret = tie_eval(n);
+    tie_free(n);
   } else {
     ret = NAN;
   }
   return ret;
 }
 
-static void pn(const te_expr *n, int depth) {
+static void pn(const tie_expression *n, int depth) {
   int i, arity;
   printf("%*s", depth, "");
 
   switch (TYPE_MASK(n->type)) {
-    case TE_CONSTANT:
+    case TIE_CONSTANT:
       printf("%d\n", n->value);
       break;
-    case TE_VARIABLE:
+    case TIE_VARIABLE:
       printf("bound %p\n", n->bound);
       break;
 
-    case TE_FUNCTION0:
-    case TE_FUNCTION1:
-    case TE_FUNCTION2:
-    case TE_FUNCTION3:
-    case TE_FUNCTION4:
-    case TE_FUNCTION5:
-    case TE_FUNCTION6:
-    case TE_FUNCTION7:
-    case TE_CLOSURE0:
-    case TE_CLOSURE1:
-    case TE_CLOSURE2:
-    case TE_CLOSURE3:
-    case TE_CLOSURE4:
-    case TE_CLOSURE5:
-    case TE_CLOSURE6:
-    case TE_CLOSURE7:
+    case TIE_FUNCTION0:
+    case TIE_FUNCTION1:
+    case TIE_FUNCTION2:
+    case TIE_FUNCTION3:
+    case TIE_FUNCTION4:
+    case TIE_FUNCTION5:
+    case TIE_FUNCTION6:
+    case TIE_FUNCTION7:
+    case TIE_CLOSURE0:
+    case TIE_CLOSURE1:
+    case TIE_CLOSURE2:
+    case TIE_CLOSURE3:
+    case TIE_CLOSURE4:
+    case TIE_CLOSURE5:
+    case TIE_CLOSURE6:
+    case TIE_CLOSURE7:
       arity = ARITY(n->type);
       printf("f%d", arity);
       for (i = 0; i < arity; i++) {
@@ -820,7 +805,7 @@ static void pn(const te_expr *n, int depth) {
 }
 
 
-void te_print(const te_expr *n) {
+void tie_print(const tie_expression *n) {
   pn(n, 0);
 }
 

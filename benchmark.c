@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <math.h>
-#include "tinyexpr.h"
+#include "tinyintegerexpr.h"
 
 
 
@@ -41,7 +41,7 @@ void bench(const char *expr, function1 func) {
     double tmp;
     clock_t start;
 
-    te_variable lk = {"a", &tmp};
+    tie_variable lk = {"a", &tmp};
 
     printf("Expression: %s\n", expr);
 
@@ -55,7 +55,7 @@ void bench(const char *expr, function1 func) {
         }
     const int nelapsed = (clock() - start) * 1000 / CLOCKS_PER_SEC;
 
-    /*Million floats per second input.*/
+    /* mfps = Million floats per second.*/
     printf(" %.5g", d);
     if (nelapsed)
         printf("\t%5dms\t%5dmfps\n", nelapsed, loops * loops / nelapsed / 1000);
@@ -66,16 +66,16 @@ void bench(const char *expr, function1 func) {
 
 
     printf("interp ");
-    te_expr *n = te_compile(expr, &lk, 1, 0);
+    tie_expression *n = tie_compile(expr, &lk, 1, 0);
     start = clock();
     d = 0;
     for (j = 0; j < loops; ++j)
         for (i = 0; i < loops; ++i) {
             tmp = i;
-            d += te_eval(n);
+            d += tie_eval(n);
         }
     const int eelapsed = (clock() - start) * 1000 / CLOCKS_PER_SEC;
-    te_free(n);
+    tie_free(n);
 
     /*Million floats per second input.*/
     printf(" %.5g", d);
