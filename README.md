@@ -30,7 +30,7 @@ Here is a minimal example to evaluate an expression at runtime.
 
 ```C
     #include "tinyintegerexpr.h"
-    printf("%f\n", tie_interp("5*5", 0)); /* Prints 25. */
+    printf("%d\n", tie_interp("5*5", 0)); /* Prints 25. */
 ```
 
 
@@ -39,15 +39,15 @@ Here is a minimal example to evaluate an expression at runtime.
 TinyIntegerExpr defines only four functions:
 
 ```C
-    double tie_interp(const char *expression, int *error);
+    int tie_interp(const char *expression, int *error);
     tie_expression *tie_compile(const char *expression, const tie_variable *variables, int var_count, int *error);
-    double tie_eval(const tie_expression *expr);
+    int tie_eval(const tie_expression *expr);
     void tie_free(tie_expression *expr);
 ```
 
 ## tie_interp
 ```C
-    double tie_interp(const char *expression, int *error);
+    int tie_interp(const char *expression, int *error);
 ```
 
 `tie_interp()` takes an expression and immediately returns the result of it. If there
@@ -61,15 +61,15 @@ of the parse error on failure, and set `*error` to 0 on success.
 ```C
     int error;
 
-    double a = tie_interp("(5+5)", 0); /* Returns 10. */
-    double b = tie_interp("(5+5)", &error); /* Returns 10, error is set to 0. */
-    double c = tie_interp("(5+5", &error); /* Returns NaN, error is set to 4. */
+    int a = tie_interp("(5+5)", 0); /* Returns 10. */
+    int b = tie_interp("(5+5)", &error); /* Returns 10, error is set to 0. */
+    int c = tie_interp("(5+5", &error); /* Returns NaN, error is set to 4. */
 ```
 
 ## tie_compile, tie_eval, tie_free
 ```C
     tie_expression *tie_compile(const char *expression, const tie_variable *lookup, int lookup_len, int *error);
-    double tie_eval(const tie_expression *n);
+    int tie_eval(const tie_expression *n);
     void tie_free(tie_expression *n);
 ```
 
@@ -89,7 +89,7 @@ After you're finished, make sure to call `tie_free()`.
 **example usage:**
 
 ```C
-    double x, y;
+    int x, y;
     /* Store variable names and pointers. */
     tie_variable vars[] = {{"x", &x}, {"y", &y}};
 
@@ -99,10 +99,10 @@ After you're finished, make sure to call `tie_free()`.
 
     if (expr) {
         x = 3; y = 4;
-        const double h1 = tie_eval(expr); /* Returns 5. */
+        const int h1 = tie_eval(expr); /* Returns 5. */
 
         x = 5; y = 12;
-        const double h2 = tie_eval(expr); /* Returns 13. */
+        const int h2 = tie_eval(expr); /* Returns 13. */
 
         tie_free(expr);
     } else {
@@ -132,7 +132,7 @@ line. It also does error checking and binds the variables `x` and `y` to *3* and
 
         /* This shows an example where the variables
          * x and y are bound at eval-time. */
-        double x, y;
+        int x, y;
         tie_variable vars[] = {{"x", &x}, {"y", &y}};
 
         /* This will compile the expression and check for errors. */
@@ -144,7 +144,7 @@ line. It also does error checking and binds the variables `x` and `y` to *3* and
              * times as you like. This is fairly efficient because the parsing has
              * already been done. */
             x = 3; y = 4;
-            const double r = tie_eval(n); printf("Result:\n\t%f\n", r);
+            const int r = tie_eval(n); printf("Result:\n\t%d\n", r);
             tie_free(n);
         } else {
             /* Show the user where the error is at. */
@@ -177,7 +177,7 @@ This produces the output:
 TinyIntegerExpr can also call to custom functions implemented in C. Here is a short example:
 
 ```C
-double my_sum(double a, double b) {
+int my_sum(int a, int b) {
     /* Example C function that adds two numbers together. */
     return a + b;
 }
@@ -200,12 +200,12 @@ expression is long and involves only basic arithmetic.
 Here are some made up performance numbers taken from the included
 **benchmark.c** program:
 
-| Expression | tie_eval time | native C time | slowdown  |
-| :------------- |-------------:| -----:|----:|
-| a+5 | 765 ms | 563 ms | 36% slower |
-| a+(5*2) | 765 ms | 563 ms | 36% slower |
-| (a+5)*2 | 1422 ms | 563 ms | 153% slower |
-| (1/(a+1)+2/(a+2)+3/(a+3)) | 5,516 ms | 1,266 ms | 336% slower |
+| Expression                | tie_eval time | native C time |    slowdown |
+|:--------------------------|--------------:|--------------:|------------:|
+| a+5                       |        765 ms |        563 ms |  36% slower |
+| a+(5*2)                   |        765 ms |        563 ms |  36% slower |
+| (a+5)*2                   |       1422 ms |        563 ms | 153% slower |
+| (1/(a+1)+2/(a+2)+3/(a+3)) |      5,516 ms |      1,266 ms | 336% slower |
 
 
 
@@ -244,8 +244,9 @@ TinyIntegerExpr supports:
 * Bitwise XOR (`^`)
 * Right Shift (`>`)
 * Left Shift (`<`)
-* 
-with the normal operator precedence
+* Ternary Expression Function (`if(expr, if_true, if_false)`)
+
+following the standard "C" operator precedence
 
 ## Hints
 
