@@ -213,16 +213,16 @@ Here are some made up performance numbers taken from the included
 
 TinyIntegerExpr parses the following grammar:
 
-    <list>      =    <expr> {"," <expr>}
-    <expr>      =    <term> {("+" | "-") <term>}
-    <term>      =    <shift> {("*" | "/" | "%") <shift>}
-    <shift>     =    <bitwise> {("<" | ">") <bitwise>}
-    <bitwise>   =    <power> {("&" | "|" | "^" ) <power>}
-    <power>     =    {("-" | "+")} <base>
+    <list>      = <bitwise> {"," <bitwise>}
+    <bitwise>   = <shift> {("&" | "^" | "|" ) <shift>}
+    <shift>     = <expr> {("<" | ">") <expr>}
+    <expr>      = <term> {("+" | "-") <term>}
+    <term>      = <unary> {("*" | "/" | "%") <unary>}
+    <unary>     =    {("-" | "+")} <base>
     <base>      =    <constant>
                    | <variable>
                    | <function-0> {"(" ")"}
-                   | <function-1> <power>
+                   | <function-1> <unary>
                    | <function-X> "(" <expr> {"," <expr>} ")"
                    | "(" <list> ")"
 

@@ -28,320 +28,239 @@
 
 
 typedef struct {
-    const char *expr;
-    double answer;
+  const char *expr;
+  int answer;
 } test_case;
 
 typedef struct {
-    const char *expr1;
-    const char *expr2;
+  const char *expr1;
+  const char *expr2;
 } test_equ;
 
 
-
 void test_results() {
-    test_case cases[] = {
-        {"1", 1},
-        {"1 ", 1},
-        {"(1)", 1},
+  test_case cases[] = {
+      {"1", 1},
+      {"1 ", 1},
+      {"(1)", 1},
 
-        {"pi", 3.14159},
-        {"atan(1)*4 - pi", 0},
-        {"e", 2.71828},
+      {"2+1", 2 + 1},
+      {"(((2+(1))))", 2 + 1},
+      {"3+2", 3 + 2},
 
-        {"2+1", 2+1},
-        {"(((2+(1))))", 2+1},
-        {"3+2", 3+2},
+      {"3+2+4", 3 + 2 + 4},
+      {"(3+2)+4", 3 + 2 + 4},
+      {"3+(2+4)", 3 + 2 + 4},
+      {"(3+2+4)", 3 + 2 + 4},
 
-        {"3+2+4", 3+2+4},
-        {"(3+2)+4", 3+2+4},
-        {"3+(2+4)", 3+2+4},
-        {"(3+2+4)", 3+2+4},
+      {"3*2*4", 3 * 2 * 4},
+      {"(3*2)*4", 3 * 2 * 4},
+      {"3*(2*4)", 3 * 2 * 4},
+      {"(3*2*4)", 3 * 2 * 4},
 
-        {"3*2*4", 3*2*4},
-        {"(3*2)*4", 3*2*4},
-        {"3*(2*4)", 3*2*4},
-        {"(3*2*4)", 3*2*4},
+      {"3-2-4", 3 - 2 - 4},
+      {"(3-2)-4", (3 - 2) - 4},
+      {"3-(2-4)", 3 - (2 - 4)},
+      {"(3-2-4)", 3 - 2 - 4},
 
-        {"3-2-4", 3-2-4},
-        {"(3-2)-4", (3-2)-4},
-        {"3-(2-4)", 3-(2-4)},
-        {"(3-2-4)", 3-2-4},
+      {"3/2/4", 3 / 2 / 4},
+      {"(3/2)/4", (3 / 2) / 4},
+      {"3/(2/4)", 3 / (2 / 4)},
+      {"(3/2/4)", 3 / 2 / 4},
 
-        {"3/2/4", 3.0/2.0/4.0},
-        {"(3/2)/4", (3.0/2.0)/4.0},
-        {"3/(2/4)", 3.0/(2.0/4.0)},
-        {"(3/2/4)", 3.0/2.0/4.0},
-
-        {"(3*2/4)", 3.0*2.0/4.0},
-        {"(3/2*4)", 3.0/2.0*4.0},
-        {"3*(2/4)", 3.0*(2.0/4.0)},
-
-        {"asin sin .5", 0.5},
-        {"sin asin .5", 0.5},
-        {"ln exp .5", 0.5},
-        {"exp ln .5", 0.5},
-
-        {"asin sin-.5", -0.5},
-        {"asin sin-0.5", -0.5},
-        {"asin sin -0.5", -0.5},
-        {"asin (sin -0.5)", -0.5},
-        {"asin (sin (-0.5))", -0.5},
-        {"asin sin (-0.5)", -0.5},
-        {"(asin sin (-0.5))", -0.5},
-
-        {"log10 1000", 3},
-        {"log10 1e3", 3},
-        {"log10 1000", 3},
-        {"log10 1e3", 3},
-        {"log10(1000)", 3},
-        {"log10(1e3)", 3},
-        {"log10 1.0e3", 3},
-        {"10^5*5e-5", 5},
-
-#ifdef TE_NAT_LOG
-        {"log 1000", 6.9078},
-        {"log e", 1},
-        {"log (e^10)", 10},
-#else
-        {"log 1000", 3},
-#endif
-
-        {"ln (e^10)", 10},
-        {"100^.5+1", 11},
-        {"100 ^.5+1", 11},
-        {"100^+.5+1", 11},
-        {"100^--.5+1", 11},
-        {"100^---+-++---++-+-+-.5+1", 11},
-
-        {"100^-.5+1", 1.1},
-        {"100^---.5+1", 1.1},
-        {"100^+---.5+1", 1.1},
-        {"1e2^+---.5e0+1e0", 1.1},
-        {"--(1e2^(+(-(-(-.5e0))))+1e0)", 1.1},
-
-        {"sqrt 100 + 7", 17},
-        {"sqrt 100 * 7", 70},
-        {"sqrt (100 * 100)", 100},
-
-        {"1,2", 2},
-        {"1,2+1", 3},
-        {"1+1,2+2,2+1", 3},
-        {"1,2,3", 3},
-        {"(1,2),3", 3},
-        {"1,(2,3)", 3},
-        {"-(1,(2,3))", -3},
-
-        {"2^2", 4},
-        {"pow(2,2)", 4},
-
-        {"atan2(1,1)", 0.7854},
-        {"atan2(1,2)", 0.4636},
-        {"atan2(2,1)", 1.1071},
-        {"atan2(3,4)", 0.6435},
-        {"atan2(3+3,4*2)", 0.6435},
-        {"atan2(3+3,(4*2))", 0.6435},
-        {"atan2((3+3),4*2)", 0.6435},
-        {"atan2((3+3),(4*2))", 0.6435},
-
-    };
+      {"(3*2/4)", 3 * 2 / 4},
+      {"(3/2*4)", 3 / 2 * 4},
+      {"3*(2/4)", 3 * (2 / 4)},
+      {"10^5*5e-5", 5},
+      {"1,2", 2},
+      {"1,2+1", 3},
+      {"1+1,2+2,2+1", 3},
+      {"1,2,3", 3},
+      {"(1,2),3", 3},
+      {"1,(2,3)", 3},
+      {"-(1,(2,3))", -3},
+  };
 
 
-    int i;
-    for (i = 0; i < sizeof(cases) / sizeof(test_case); ++i) {
-        const char *expr = cases[i].expr;
-        const double answer = cases[i].answer;
+  int i;
+  for (i = 0; i < sizeof(cases) / sizeof(test_case); ++i) {
+    const char *expr = cases[i].expr;
+    const int answer = cases[i].answer;
 
-        int err;
-        const double ev = tie_interp(expr, &err);
-        lok(!err);
-        lfequal(ev, answer);
+    int err;
+    const int ev = tie_interp(expr, &err);
+    lok(!err);
+    lfequal(ev, answer);
 
-        if (err) {
-            printf("FAILED: %s (%d)\n", expr, err);
-        }
+    if (err) {
+      printf("FAILED: %s (%d)\n", expr, err);
     }
+  }
 }
 
 
 void test_syntax() {
-    test_case errors[] = {
-        {"", 1},
-        {"1+", 2},
-        {"1)", 2},
-        {"(1", 2},
-        {"1**1", 3},
-        {"1*2(+4", 4},
-        {"1*2(1+4", 4},
-        {"a+5", 1},
-        {"!+5", 1},
-        {"_a+5", 1},
-        {"#a+5", 1},
-        {"1^^5", 3},
-        {"1**5", 3},
-        {"sin(cos5", 8},
-    };
+  test_case errors[] = {
+      {"",         1},
+      {"1+",       2},
+      {"1)",       2},
+      {"(1",       2},
+      {"1**1",     3},
+      {"1*2(+4",   4},
+      {"1*2(1+4",  4},
+      {"a+5",      1},
+      {"!+5",      1},
+      {"_a+5",     1},
+      {"#a+5",     1},
+      {"1^^5",     3},
+      {"1**5",     3},
+      {"sin(cos5", 8},
+  };
 
 
-    int i;
-    for (i = 0; i < sizeof(errors) / sizeof(test_case); ++i) {
-        const char *expr = errors[i].expr;
-        const int e = errors[i].answer;
+  int i;
+  for (i = 0; i < sizeof(errors) / sizeof(test_case); ++i) {
+    const char *expr = errors[i].expr;
+    const int e = errors[i].answer;
 
-        int err;
-        const double r = tie_interp(expr, &err);
-        lequal(err, e);
-        lok(r != r);
+    int err;
+    const int r = tie_interp(expr, &err);
+    lequal(err, e);
+    lok(r != r);
 
-        tie_expression *n = tie_compile(expr, 0, 0, &err);
-        lequal(err, e);
-        lok(!n);
+    tie_expression *n = tie_compile(expr, 0, 0, &err);
+    lequal(err, e);
+    lok(!n);
 
-        if (err != e) {
-            printf("FAILED: %s\n", expr);
-        }
-
-        const double k = tie_interp(expr, 0);
-        lok(k != k);
+    if (err != e) {
+      printf("FAILED: %s\n", expr);
     }
+
+    const int k = tie_interp(expr, 0);
+    lok(k != k);
+  }
 }
 
 
 void test_nans() {
 
-    const char *nans[] = {
-        "0/0",
-        "1%0",
-        "1%(1%0)",
-        "(1%0)%1",
-        "fac(-1)",
-        "ncr(2, 4)",
-        "ncr(-2, 4)",
-        "ncr(2, -4)",
-        "npr(2, 4)",
-        "npr(-2, 4)",
-        "npr(2, -4)",
-    };
+  const char *nans[] = {
+      "0/0",
+      "1%0",
+      "1%(1%0)",
+      "(1%0)%1",
+  };
 
-    int i;
-    for (i = 0; i < sizeof(nans) / sizeof(const char *); ++i) {
-        const char *expr = nans[i];
+  int i;
+  for (i = 0; i < sizeof(nans) / sizeof(const char *); ++i) {
+    const char *expr = nans[i];
 
-        int err;
-        const double r = tie_interp(expr, &err);
-        lequal(err, 0);
-        lok(r != r);
+    int err;
+    const int r = tie_interp(expr, &err);
+    lequal(err, 0);
+    lok(r != r);
 
-        tie_expression *n = tie_compile(expr, 0, 0, &err);
-        lok(n);
-        lequal(err, 0);
-        const double c = tie_eval(n);
-        lok(c != c);
-        tie_free(n);
-    }
+    tie_expression *n = tie_compile(expr, 0, 0, &err);
+    lok(n);
+    lequal(err, 0);
+    const int c = tie_eval(n);
+    lok(c != c);
+    tie_free(n);
+  }
 }
 
 
 void test_infs() {
 
-    const char *infs[] = {
-            "1/0",
-            "log(0)",
-            "pow(2,10000000)",
-            "fac(300)",
-            "ncr(300,100)",
-            "ncr(300000,100)",
-            "ncr(300000,100)*8",
-            "npr(3,2)*ncr(300000,100)",
-            "npr(100,90)",
-            "npr(30,25)",
-    };
+  const char *infs[] = {
+      "1/0",
+  };
 
-    int i;
-    for (i = 0; i < sizeof(infs) / sizeof(const char *); ++i) {
-        const char *expr = infs[i];
+  int i;
+  for (i = 0; i < sizeof(infs) / sizeof(const char *); ++i) {
+    const char *expr = infs[i];
 
-        int err;
-        const double r = tie_interp(expr, &err);
-        lequal(err, 0);
-        lok(r == r + 1);
+    int err;
+    const int r = tie_interp(expr, &err);
+    lequal(err, 0);
+    lok(r == r + 1);
 
-        tie_expression *n = tie_compile(expr, 0, 0, &err);
-        lok(n);
-        lequal(err, 0);
-        const double c = tie_eval(n);
-        lok(c == c + 1);
-        tie_free(n);
-    }
+    tie_expression *n = tie_compile(expr, 0, 0, &err);
+    lok(n);
+    lequal(err, 0);
+    const int c = tie_eval(n);
+    lok(c == c + 1);
+    tie_free(n);
+  }
 }
 
 
 void test_variables() {
 
-    double x, y, test;
-    tie_variable lookup[] = {{"x", &x}, {"y", &y}, {"tie_st", &test}};
+  int x, y, test;
+  tie_variable lookup[] = {{"x",      &x},
+                           {"y",      &y},
+                           {"tie_st", &test}};
 
-    int err;
+  int err;
 
-    tie_expression *expr1 = tie_compile("cos x + sin y", lookup, 2, &err);
-    lok(expr1);
-    lok(!err);
+  tie_expression *expr1 = tie_compile("x + y", lookup, 2, &err);
+  lok(expr1);
+  lok(!err);
 
-    tie_expression *expr2 = tie_compile("x+x+x-y", lookup, 2, &err);
-    lok(expr2);
-    lok(!err);
+  tie_expression *expr2 = tie_compile("x+x+x-y", lookup, 2, &err);
+  lok(expr2);
+  lok(!err);
 
-    tie_expression *expr3 = tie_compile("x*y^3", lookup, 2, &err);
-    lok(expr3);
-    lok(!err);
+  tie_expression *expr3 = tie_compile("x*y^3", lookup, 2, &err);
+  lok(expr3);
+  lok(!err);
 
-    tie_expression *expr4 = tie_compile("tie_st+5", lookup, 3, &err);
-    lok(expr4);
-    lok(!err);
+  tie_expression *expr4 = tie_compile("tie_st+5", lookup, 3, &err);
+  lok(expr4);
+  lok(!err);
 
-    for (y = 2; y < 3; ++y) {
-        for (x = 0; x < 5; ++x) {
-            double ev;
+  for (y = 2; y < 3; ++y) {
+    for (x = 0; x < 5; ++x) {
+      int ev;
 
-            ev = tie_eval(expr1);
-            lfequal(ev, cos(x) + sin(y));
+      ev = tie_eval(expr1);
+      lfequal(ev, x + y);
 
-            ev = tie_eval(expr2);
-            lfequal(ev, x+x+x-y);
+      ev = tie_eval(expr2);
+      lfequal(ev, x + x + x - y);
 
-            ev = tie_eval(expr3);
-            lfequal(ev, x*y*y*y);
+      ev = tie_eval(expr3);
+      lfequal(ev, x * y ^ 3);
 
-            test = x;
-            ev = tie_eval(expr4);
-            lfequal(ev, x+5);
-        }
+      test = x;
+      ev = tie_eval(expr4);
+      lfequal(ev, x + 5);
     }
+  }
 
-    tie_free(expr1);
-    tie_free(expr2);
-    tie_free(expr3);
-    tie_free(expr4);
+  tie_free(expr1);
+  tie_free(expr2);
+  tie_free(expr3);
+  tie_free(expr4);
 
 
+  tie_expression *expr5 = tie_compile("xx*y^3", lookup, 2, &err);
+  lok(!expr5);
+  lok(err);
 
-    tie_expression *expr5 = tie_compile("xx*y^3", lookup, 2, &err);
-    lok(!expr5);
-    lok(err);
+  tie_expression *expr6 = tie_compile("tes", lookup, 3, &err);
+  lok(!expr6);
+  lok(err);
 
-    tie_expression *expr6 = tie_compile("tes", lookup, 3, &err);
-    lok(!expr6);
-    lok(err);
+  tie_expression *expr7 = tie_compile("if(1,x,y)", lookup, 2, &err);
+  lok(!expr7);
+  lok(err);
 
-    tie_expression *expr7 = tie_compile("sinn x", lookup, 2, &err);
-    lok(!expr7);
-    lok(err);
-
-    tie_expression *expr8 = tie_compile("si x", lookup, 2, &err);
-    lok(!expr8);
-    lok(err);
+  tie_expression *expr8 = tie_compile("x<<y", lookup, 2, &err);
+  lok(!expr8);
+  lok(err);
 }
-
 
 
 #define cross_check(a, b) do {\
@@ -354,356 +273,226 @@ void test_variables() {
 
 void test_functions() {
 
-    double x, y;
-    tie_variable lookup[] = {{"x", &x}, {"y", &y}};
+  int x, y;
+  tie_variable lookup[] = {{"x", &x},
+                           {"y", &y}};
 
-    int err;
-    tie_expression *expr;
+  int err;
+  tie_expression *expr;
 
-    for (x = -5; x < 5; x += .2) {
-        cross_check("abs x", fabs(x));
-        cross_check("acos x", acos(x));
-        cross_check("asin x", asin(x));
-        cross_check("atan x", atan(x));
-        cross_check("ceil x", ceil(x));
-        cross_check("cos x", cos(x));
-        cross_check("cosh x", cosh(x));
-        cross_check("exp x", exp(x));
-        cross_check("floor x", floor(x));
-        cross_check("ln x", log(x));
-        cross_check("log10 x", log10(x));
-        cross_check("sin x", sin(x));
-        cross_check("sinh x", sinh(x));
-        cross_check("sqrt x", sqrt(x));
-        cross_check("tan x", tan(x));
-        cross_check("tanh x", tanh(x));
+  for (x = -5; x < 5; x++) {
+    cross_check("abs x", abs(x));
 
-        for (y = -2; y < 2; y += .2) {
-            if (fabs(x) < 0.01) break;
-            cross_check("atan2(x,y)", atan2(x, y));
-            cross_check("pow(x,y)", pow(x, y));
-        }
+    for (y = -2; y < 2; y++) {
+      cross_check("if(x,y,-1)", x ? y : -99);
     }
+  }
 }
 
 
-double sum0() {
-    return 6;
+int sum0() {
+  return 6;
 }
-double sum1(double a) {
-    return a * 2;
+
+int sum1(int a) {
+  return a * 2;
 }
-double sum2(double a, double b) {
-    return a + b;
+
+int sum2(int a, int b) {
+  return a + b;
 }
-double sum3(double a, double b, double c) {
-    return a + b + c;
+
+int sum3(int a, int b, int c) {
+  return a + b + c;
 }
-double sum4(double a, double b, double c, double d) {
-    return a + b + c + d;
+
+int sum4(int a, int b, int c, int d) {
+  return a + b + c + d;
 }
-double sum5(double a, double b, double c, double d, double e) {
-    return a + b + c + d + e;
+
+int sum5(int a, int b, int c, int d, int e) {
+  return a + b + c + d + e;
 }
-double sum6(double a, double b, double c, double d, double e, double f) {
-    return a + b + c + d + e + f;
+
+int sum6(int a, int b, int c, int d, int e, int f) {
+  return a + b + c + d + e + f;
 }
-double sum7(double a, double b, double c, double d, double e, double f, double g) {
-    return a + b + c + d + e + f + g;
+
+int sum7(int a, int b, int c, int d, int e, int f, int g) {
+  return a + b + c + d + e + f + g;
 }
 
 
 void test_dynamic() {
 
-    double x, f;
-    tie_variable lookup[] = {
-        {"x", &x},
-        {"f", &f},
-        {"sum0", sum0, TE_FUNCTION0},
-        {"sum1", sum1, TE_FUNCTION1},
-        {"sum2", sum2, TE_FUNCTION2},
-        {"sum3", sum3, TE_FUNCTION3},
-        {"sum4", sum4, TE_FUNCTION4},
-        {"sum5", sum5, TE_FUNCTION5},
-        {"sum6", sum6, TE_FUNCTION6},
-        {"sum7", sum7, TE_FUNCTION7},
-    };
+  int x, f;
+  tie_variable lookup[] = {
+      {"x",    &x},
+      {"f",    &f},
+      {"sum0", sum0, TIE_FUNCTION0},
+      {"sum1", sum1, TIE_FUNCTION1},
+      {"sum2", sum2, TIE_FUNCTION2},
+      {"sum3", sum3, TIE_FUNCTION3},
+      {"sum4", sum4, TIE_FUNCTION4},
+      {"sum5", sum5, TIE_FUNCTION5},
+      {"sum6", sum6, TIE_FUNCTION6},
+      {"sum7", sum7, TIE_FUNCTION7},
+  };
 
-    test_case cases[] = {
-        {"x", 2},
-        {"f+x", 7},
-        {"x+x", 4},
-        {"x+f", 7},
-        {"f+f", 10},
-        {"f+sum0", 11},
-        {"sum0+sum0", 12},
-        {"sum0()+sum0", 12},
-        {"sum0+sum0()", 12},
-        {"sum0()+(0)+sum0()", 12},
-        {"sum1 sum0", 12},
-        {"sum1(sum0)", 12},
-        {"sum1 f", 10},
-        {"sum1 x", 4},
-        {"sum2 (sum0, x)", 8},
-        {"sum3 (sum0, x, 2)", 10},
-        {"sum2(2,3)", 5},
-        {"sum3(2,3,4)", 9},
-        {"sum4(2,3,4,5)", 14},
-        {"sum5(2,3,4,5,6)", 20},
-        {"sum6(2,3,4,5,6,7)", 27},
-        {"sum7(2,3,4,5,6,7,8)", 35},
-    };
+  test_case cases[] = {
+      {"x",                   2},
+      {"f+x",                 7},
+      {"x+x",                 4},
+      {"x+f",                 7},
+      {"f+f",                 10},
+      {"f+sum0",              11},
+      {"sum0+sum0",           12},
+      {"sum0()+sum0",         12},
+      {"sum0+sum0()",         12},
+      {"sum0()+(0)+sum0()",   12},
+      {"sum1 sum0",           12},
+      {"sum1(sum0)",          12},
+      {"sum1 f",              10},
+      {"sum1 x",              4},
+      {"sum2 (sum0, x)",      8},
+      {"sum3 (sum0, x, 2)",   10},
+      {"sum2(2,3)",           5},
+      {"sum3(2,3,4)",         9},
+      {"sum4(2,3,4,5)",       14},
+      {"sum5(2,3,4,5,6)",     20},
+      {"sum6(2,3,4,5,6,7)",   27},
+      {"sum7(2,3,4,5,6,7,8)", 35},
+  };
 
-    x = 2;
-    f = 5;
+  x = 2;
+  f = 5;
 
-    int i;
-    for (i = 0; i < sizeof(cases) / sizeof(test_case); ++i) {
-        const char *expr = cases[i].expr;
-        const double answer = cases[i].answer;
+  int i;
+  for (i = 0; i < sizeof(cases) / sizeof(test_case); ++i) {
+    const char *expr = cases[i].expr;
+    const int answer = cases[i].answer;
 
-        int err;
-        tie_expression *ex = tie_compile(expr, lookup, sizeof(lookup)/sizeof(tie_variable), &err);
-        lok(ex);
-        lfequal(tie_eval(ex), answer);
-        tie_free(ex);
-    }
+    int err;
+    tie_expression *ex = tie_compile(expr, lookup, sizeof(lookup) / sizeof(tie_variable), &err);
+    lok(ex);
+    lfequal(tie_eval(ex), answer);
+    tie_free(ex);
+  }
 }
 
 
-double clo0(void *context) {
-    if (context) return *((double*)context) + 6;
-    return 6;
-}
-double clo1(void *context, double a) {
-    if (context) return *((double*)context) + a * 2;
-    return a * 2;
-}
-double clo2(void *context, double a, double b) {
-    if (context) return *((double*)context) + a + b;
-    return a + b;
+int clo0(void *context) {
+  if (context) return *((int *) context) + 6;
+  return 6;
 }
 
-double cell(void *context, double a) {
-    double *c = context;
-    return c[(int)a];
+int clo1(void *context, int a) {
+  if (context) return *((int *) context) + a * 2;
+  return a * 2;
+}
+
+int clo2(void *context, int a, int b) {
+  if (context) return *((int *) context) + a + b;
+  return a + b;
+}
+
+int cell(void *context, int a) {
+  int *c = context;
+  return c[(int) a];
 }
 
 void test_closure() {
 
-    double extra;
-    double c[] = {5,6,7,8,9};
+  int extra;
+  int c[] = {5, 6, 7, 8, 9};
 
-    tie_variable lookup[] = {
-        {"c0", clo0, TE_CLOSURE0, &extra},
-        {"c1", clo1, TE_CLOSURE1, &extra},
-        {"c2", clo2, TE_CLOSURE2, &extra},
-        {"cell", cell, TE_CLOSURE1, c},
-    };
+  tie_variable lookup[] = {
+      {"c0",   clo0, TIE_CLOSURE0, &extra},
+      {"c1",   clo1, TIE_CLOSURE1, &extra},
+      {"c2",   clo2, TIE_CLOSURE2, &extra},
+      {"cell", cell, TIE_CLOSURE1, c},
+  };
 
-    test_case cases[] = {
-        {"c0", 6},
-        {"c1 4", 8},
-        {"c2 (10, 20)", 30},
-    };
+  test_case cases[] = {
+      {"c0",          6},
+      {"c1 4",        8},
+      {"c2 (10, 20)", 30},
+  };
 
-    int i;
-    for (i = 0; i < sizeof(cases) / sizeof(test_case); ++i) {
-        const char *expr = cases[i].expr;
-        const double answer = cases[i].answer;
+  int i;
+  for (i = 0; i < sizeof(cases) / sizeof(test_case); ++i) {
+    const char *expr = cases[i].expr;
+    const int answer = cases[i].answer;
 
-        int err;
-        tie_expression *ex = tie_compile(expr, lookup, sizeof(lookup)/sizeof(tie_variable), &err);
-        lok(ex);
+    int err;
+    tie_expression *ex = tie_compile(expr, lookup, sizeof(lookup) / sizeof(tie_variable), &err);
+    lok(ex);
 
-        extra = 0;
-        lfequal(tie_eval(ex), answer + extra);
+    extra = 0;
+    lfequal(tie_eval(ex), answer + extra);
 
-        extra = 10;
-        lfequal(tie_eval(ex), answer + extra);
+    extra = 10;
+    lfequal(tie_eval(ex), answer + extra);
 
-        tie_free(ex);
-    }
+    tie_free(ex);
+  }
 
 
-    test_case cases2[] = {
-        {"cell 0", 5},
-        {"cell 1", 6},
-        {"cell 0 + cell 1", 11},
-        {"cell 1 * cell 3 + cell 4", 57},
-    };
+  test_case cases2[] = {
+      {"cell 0",                   5},
+      {"cell 1",                   6},
+      {"cell 0 + cell 1",          11},
+      {"cell 1 * cell 3 + cell 4", 57},
+  };
 
-    for (i = 0; i < sizeof(cases2) / sizeof(test_case); ++i) {
-        const char *expr = cases2[i].expr;
-        const double answer = cases2[i].answer;
+  for (i = 0; i < sizeof(cases2) / sizeof(test_case); ++i) {
+    const char *expr = cases2[i].expr;
+    const int answer = cases2[i].answer;
 
-        int err;
-        tie_expression *ex = tie_compile(expr, lookup, sizeof(lookup)/sizeof(tie_variable), &err);
-        lok(ex);
-        lfequal(tie_eval(ex), answer);
-        tie_free(ex);
-    }
+    int err;
+    tie_expression *ex = tie_compile(expr, lookup, sizeof(lookup) / sizeof(tie_variable), &err);
+    lok(ex);
+    lfequal(tie_eval(ex), answer);
+    tie_free(ex);
+  }
 }
 
 void test_optimize() {
 
-    test_case cases[] = {
-        {"5+5", 10},
-        {"pow(2,2)", 4},
-        {"sqrt 100", 10},
-        {"pi * 2", 6.2832},
-    };
+  test_case cases[] = {
+      {"5+5",    10},
+      {"22 * 2", 44},
+  };
 
-    int i;
-    for (i = 0; i < sizeof(cases) / sizeof(test_case); ++i) {
-        const char *expr = cases[i].expr;
-        const double answer = cases[i].answer;
+  int i;
+  for (i = 0; i < sizeof(cases) / sizeof(test_case); ++i) {
+    const char *expr = cases[i].expr;
+    const int answer = cases[i].answer;
 
-        int err;
-        tie_expression *ex = tie_compile(expr, 0, 0, &err);
-        lok(ex);
+    int err;
+    tie_expression *ex = tie_compile(expr, 0, 0, &err);
+    lok(ex);
 
-        /* The answer should be know without
-         * even running eval. */
-        lfequal(ex->value, answer);
-        lfequal(tie_eval(ex), answer);
+    /* The answer should be known without
+     * even running eval. */
+    lfequal(ex->value, answer);
+    lfequal(tie_eval(ex), answer);
 
-        tie_free(ex);
-    }
+    tie_free(ex);
+  }
 }
 
-void test_pow() {
-#ifdef TE_POW_FROM_RIGHT
-    test_equ cases[] = {
-        {"2^3^4", "2^(3^4)"},
-        {"-2^2", "-(2^2)"},
-        {"--2^2", "(2^2)"},
-        {"---2^2", "-(2^2)"},
-        {"-(2*1)^2", "-(2^2)"},
-        {"-2^2", "-4"},
-        {"2^1.1^1.2^1.3", "2^(1.1^(1.2^1.3))"},
-        {"-a^b", "-(a^b)"},
-        {"-a^-b", "-(a^-b)"},
-        {"1^0", "1"},
-        {"(1)^0", "1"},
-        {"-(2)^2", "-(2^2)"}
-        /* TODO POW FROM RIGHT IS STILL BUGGY
-        {"(-2)^2", "4"},
-        {"(-1)^0", "1"},
-        {"(-5)^0", "1"},
-        {"-2^-3^-4", "-(2^(-(3^-4)))"}*/
-    };
-#else
-    test_equ cases[] = {
-        {"2^3^4", "(2^3)^4"},
-        {"-2^2", "(-2)^2"},
-        {"(-2)^2", "4"},
-        {"--2^2", "2^2"},
-        {"---2^2", "(-2)^2"},
-        {"-2^2", "4"},
-        {"2^1.1^1.2^1.3", "((2^1.1)^1.2)^1.3"},
-        {"-a^b", "(-a)^b"},
-        {"-a^-b", "(-a)^(-b)"},
-        {"1^0", "1"},
-        {"(1)^0", "1"},
-        {"(-1)^0", "1"},
-        {"(-5)^0", "1"},
-        {"-2^-3^-4", "((-2)^(-3))^(-4)"}
-    };
-#endif
+int main(int argc, char *argv[]) {
+  lrun("Results", test_results);
+  lrun("Syntax", test_syntax);
+  lrun("NaNs", test_nans);
+  lrun("INFs", test_infs);
+  lrun("Variables", test_variables);
+  lrun("Functions", test_functions);
+  lrun("Dynamic", test_dynamic);
+  lrun("Closure", test_closure);
+  lrun("Optimize", test_optimize);
+  lresults();
 
-    double a = 2, b = 3;
-
-    tie_variable lookup[] = {
-        {"a", &a},
-        {"b", &b}
-    };
-
-    int i;
-    for (i = 0; i < sizeof(cases) / sizeof(test_equ); ++i) {
-        const char *expr1 = cases[i].expr1;
-        const char *expr2 = cases[i].expr2;
-
-        tie_expression *ex1 = tie_compile(expr1, lookup, sizeof(lookup)/sizeof(tie_variable), 0);
-        tie_expression *ex2 = tie_compile(expr2, lookup, sizeof(lookup)/sizeof(tie_variable), 0);
-
-        lok(ex1);
-        lok(ex2);
-
-        double r1 = tie_eval(ex1);
-        double r2 = tie_eval(ex2);
-
-        fflush(stdout);
-        const int olfail = lfails;
-        lfequal(r1, r2);
-        if (olfail != lfails) {
-            printf("Failed expression: %s <> %s\n", expr1, expr2);
-        }
-
-        tie_free(ex1);
-        tie_free(ex2);
-    }
-
-}
-
-void test_combinatorics() {
-    test_case cases[] = {
-            {"fac(0)", 1},
-            {"fac(0.2)", 1},
-            {"fac(1)", 1},
-            {"fac(2)", 2},
-            {"fac(3)", 6},
-            {"fac(4.8)", 24},
-            {"fac(10)", 3628800},
-
-            {"ncr(0,0)", 1},
-            {"ncr(10,1)", 10},
-            {"ncr(10,0)", 1},
-            {"ncr(10,10)", 1},
-            {"ncr(16,7)", 11440},
-            {"ncr(16,9)", 11440},
-            {"ncr(100,95)", 75287520},
-
-            {"npr(0,0)", 1},
-            {"npr(10,1)", 10},
-            {"npr(10,0)", 1},
-            {"npr(10,10)", 3628800},
-            {"npr(20,5)", 1860480},
-            {"npr(100,4)", 94109400},
-    };
-
-
-    int i;
-    for (i = 0; i < sizeof(cases) / sizeof(test_case); ++i) {
-        const char *expr = cases[i].expr;
-        const double answer = cases[i].answer;
-
-        int err;
-        const double ev = tie_interp(expr, &err);
-        lok(!err);
-        lfequal(ev, answer);
-
-        if (err) {
-            printf("FAILED: %s (%d)\n", expr, err);
-        }
-    }
-}
-
-
-int main(int argc, char *argv[])
-{
-    lrun("Results", test_results);
-    lrun("Syntax", test_syntax);
-    lrun("NaNs", test_nans);
-    lrun("INFs", test_infs);
-    lrun("Variables", test_variables);
-    lrun("Functions", test_functions);
-    lrun("Dynamic", test_dynamic);
-    lrun("Closure", test_closure);
-    lrun("Optimize", test_optimize);
-    lrun("Pow", test_pow);
-    lrun("Combinatorics", test_combinatorics);
-    lresults();
-
-    return lfails != 0;
+  return lfails != 0;
 }

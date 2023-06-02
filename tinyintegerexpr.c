@@ -9,7 +9,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
-#include <limits.h>
 
 #ifndef NAN
 #define NAN (0.0/0.0)
@@ -120,10 +119,8 @@ static int iffunc(int a, int b, int c) {
 
 static const tie_variable functions[] = {
     /* must be in alphabetical order */
-    {"abs",   fabs,   TIE_FUNCTION1 | TIE_FLAG_PURE, 0},
-    {"floor", floor,  TIE_FUNCTION1 | TIE_FLAG_PURE, 0},
-    {"if",    iffunc, TIE_FUNCTION3 | TIE_FLAG_PURE, 0},
-    {0,       0,      0,                           0}
+    {"if", iffunc, TIE_FUNCTION3 | TIE_FLAG_PURE, 0},
+    {0,    0,      0,                             0}
 };
 
 static const tie_variable *find_builtin(const char *name, int len) {
@@ -223,7 +220,7 @@ void next_token(state *s) {
     }
 
     // Is it a Number?
-    if (isdigit(s->next[0]) || s->next[0] == '.') {
+    if (isdigit(s->next[0])) {
       s->value = strtod(s->next, (char **) &s->next);
       s->type = NUMBER_TOKEN;
     } else {
@@ -345,14 +342,14 @@ static tie_expression *list(state *s);
 
 static tie_expression *expr(state *s);
 
-static tie_expression *power(state *s);
+static tie_expression *unary(state *s);
 
 static tie_expression *bitwise(state *s);
 
 static tie_expression *shift(state *s);
 
 static tie_expression *base(state *s) {
-  /* <base>      =    <constant> | <variable> | <function-0> {"(" ")"} | <function-1> <power> | <function-X> "(" <expr> {"," <expr>} ")" | "(" <list> ")" */
+  /* <base>      =    <constant> | <variable> | <function-0> {"(" ")"} | <function-1> <unary> | <function-X> "(" <expr> {"," <expr>} ")" | "(" <list> ")" */
   tie_expression *ret;
   unsigned char arity;
 
@@ -406,7 +403,7 @@ static tie_expression *base(state *s) {
       }
 #pragma clang diagnostic pop
       next_token(s);
-      ret->parameters[0] = power(s);
+      ret->parameters[0] = unary(s);
       CHECK_NULL(ret->parameters[0], tie_free(ret));
       break;
 
@@ -478,8 +475,8 @@ static tie_expression *base(state *s) {
 }
 
 
-static tie_expression *power(state *s) {
-  /* <power> = {("-" | "+")} <base> */
+static tie_expression *unary(state *s) {
+  /* <unary> = {("-" | "+")} <base> */
   char sign = 1;
   while (s->type == INFIX_TOKEN && (s->function == add || s->function == sub)) {
     if (s->function == sub) sign = -sign;
@@ -503,58 +500,15 @@ static tie_expression *power(state *s) {
   return ret;
 }
 
-
-static tie_expression *bitwise(state *s) {
-  // <bitwise> = <power> {("&" | "|" | "^" ) <power>}
-  tie_expression *ret = power(s);
-  CHECK_NULL(ret);
-
-  while (s->type == INFIX_TOKEN && (s->function == bitwise_and || s->function == bitwise_or || s->function == bitwise_xor)) {
-    tie_fun2 t = s->function;
-    next_token(s);
-    tie_expression *f = power(s);
-    CHECK_NULL(f, tie_free(ret));
-
-    tie_expression *prev = ret;
-    ret = NEW_EXPR(TIE_FUNCTION2 | TIE_FLAG_PURE, ret, f);
-    CHECK_NULL(ret, tie_free(f), tie_free(prev));
-
-    ret->function = t;
-  }
-
-  return ret;
-}
-
-static tie_expression *shift(state *s) {
-  // <shift> = <bitwise> {("<" | ">") <bitwise>}
-  tie_expression *ret = bitwise(s);
-  CHECK_NULL(ret);
-
-  while (s->type == INFIX_TOKEN && (s->function == bitshift_left || s->function == bitshift_right)) {
-    tie_fun2 t = s->function;
-    next_token(s);
-    tie_expression *f = bitwise(s);
-    CHECK_NULL(f, tie_free(ret));
-
-    tie_expression *prev = ret;
-    ret = NEW_EXPR(TIE_FUNCTION2 | TIE_FLAG_PURE, ret, f);
-    CHECK_NULL(ret, tie_free(f), tie_free(prev));
-
-    ret->function = t;
-  }
-
-  return ret;
-}
-
 static tie_expression *term(state *s) {
-  // <term> = <shift> {("*" | "/" | "%") <shift>}
-  tie_expression *ret = shift(s);
+  // <term> = <unary> {("*" | "/" | "%") <unary>}
+  tie_expression *ret = unary(s);
   CHECK_NULL(ret);
 
   while (s->type == INFIX_TOKEN && (s->function == mul || s->function == divide || s->function == fmod)) {
     tie_fun2 t = s->function;
     next_token(s);
-    tie_expression *f = shift(s);
+    tie_expression *f = unary(s);
     CHECK_NULL(f, tie_free(ret));
 
     tie_expression *prev = ret;
@@ -589,15 +543,56 @@ static tie_expression *expr(state *s) {
   return ret;
 }
 
+static tie_expression *shift(state *s) {
+  // <shift> = <expr> {("<" | ">") <expr>}
+  tie_expression *ret = expr(s);
+  CHECK_NULL(ret);
+
+  while (s->type == INFIX_TOKEN && (s->function == bitshift_left || s->function == bitshift_right)) {
+    tie_fun2 t = s->function;
+    next_token(s);
+    tie_expression *f = expr(s);
+    CHECK_NULL(f, tie_free(ret));
+
+    tie_expression *prev = ret;
+    ret = NEW_EXPR(TIE_FUNCTION2 | TIE_FLAG_PURE, ret, f);
+    CHECK_NULL(ret, tie_free(f), tie_free(prev));
+
+    ret->function = t;
+  }
+
+  return ret;
+}
+
+static tie_expression *bitwise(state *s) {
+  // <bitwise> = <shift> {("&" | "^" | "|" ) <shift>}
+  tie_expression *ret = shift(s);
+  CHECK_NULL(ret);
+
+  while (s->type == INFIX_TOKEN && (s->function == bitwise_and || s->function == bitwise_xor || s->function == bitwise_or)) {
+    tie_fun2 t = s->function;
+    next_token(s);
+    tie_expression *f = shift(s);
+    CHECK_NULL(f, tie_free(ret));
+
+    tie_expression *prev = ret;
+    ret = NEW_EXPR(TIE_FUNCTION2 | TIE_FLAG_PURE, ret, f);
+    CHECK_NULL(ret, tie_free(f), tie_free(prev));
+
+    ret->function = t;
+  }
+
+  return ret;
+}
 
 static tie_expression *list(state *s) {
-  /* <list> = <expr> {"," <expr>} */
-  tie_expression *ret = expr(s);
+  /* <list> = <bitwise> {"," <bitwise>} */
+  tie_expression *ret = bitwise(s);
   CHECK_NULL(ret);
 
   while (s->type == SEPARATOR_TOKEN) {
     next_token(s);
-    tie_expression *e = expr(s);
+    tie_expression *e = bitwise(s);
     CHECK_NULL(e, tie_free(ret));
 
     tie_expression *prev = ret;
@@ -696,15 +691,13 @@ int tie_eval(const tie_expression *n) {
 
 static void optimize(tie_expression *n) {
   /* Evaluates as much as possible. */
-  if (n->type == TIE_CONSTANT) return;
-  if (n->type == TIE_VARIABLE) return;
+  if (n->type == TIE_CONSTANT || n->type == TIE_VARIABLE) return;
 
   /* Only optimize out functions flagged as pure. */
   if (IS_PURE(n->type)) {
     const int arity = ARITY(n->type);
     int known = 1;
-    int i;
-    for (i = 0; i < arity; ++i) {
+    for (int i = 0; i < arity; ++i) {
       optimize(n->parameters[i]);
       if (((tie_expression *) (n->parameters[i]))->type != TIE_CONSTANT) {
         known = 0;
